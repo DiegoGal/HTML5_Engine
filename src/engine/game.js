@@ -340,7 +340,20 @@ class Game {
 
     /**
      * Merges new values into `this.config`. Call this in the constructor to set up the game.
-     * @param {Object} newConfig - Config properties to merge. See `this.config` for all options.
+     * @param {{
+     *   screenWidth?: number,
+     *   screenHeight?: number,
+     *   imageSmoothingEnabled?: boolean,
+     *   fillWindow?: boolean,
+     *   matchNativeResolution?: boolean,
+     *   preserveAspectRatio?: boolean,
+     *   useDevicePixelRatio?: boolean,
+     *   audioAnalyzer?: boolean,
+     *   analyzerfftSize?: number,
+     *   analyzerSmoothing?: number,
+     *   drawColliders?: boolean,
+     *   collidersOnly?: boolean
+     * }} newConfig - Config properties to merge. All fields are optional.
      */
     Configure(newConfig) {
         // Merge new configuration with existing config

@@ -213,6 +213,39 @@ Signature: `DrawImageSection(img, x, y, sx, sy, sw, sh, scaleX, scaleY, rot=0, p
 
 > `SSAnimationObjectBasic` and `SSAnimationObjectComplex` use this internally.
 
+#### Using `DrawSection` in a `SpriteObject` subclass
+
+When your game object extends `SpriteObject`, you can call `super.DrawSection(renderer, sx, sy, sw, sh)` from inside your overridden `Draw()` to render a specific crop of the sprite sheet at the object's current position, scale, and rotation — without having to repeat the transform math.
+
+A common pattern is to pre-define a static lookup table of source rectangles (one per variant) and pick the right one at draw time:
+
+```javascript
+class PangBall extends SpriteObject {
+
+    // Source rectangles for each ball size in the shared sprite sheet
+    static _sections = [
+        { x:   2, y:  8, w: 64, h: 52 }, // large
+        { x:  67, y: 13, w: 48, h: 40 }, // medium
+        { x: 116, y: 20, w: 32, h: 26 }, // small
+        { x: 149, y: 26, w: 16, h: 12 }, // tiny
+    ];
+
+    constructor(position, img, sizeIndex) {
+        super(position, 0, new Vector2(1, 1), img);
+        this.sizeIndex = sizeIndex;
+    }
+
+    Draw(renderer) {
+        const sec = PangBall._sections[this.sizeIndex];
+        super.DrawSection(renderer, sec.x, sec.y, sec.w, sec.h);
+    }
+}
+```
+
+> Note: because `_sections` is declared `static`, it lives on the class itself — access it as `PangBall._sections`, not `this._sections`.
+
+> **Real-world example:** see `PangBall` in the <a href="https://maxi-jp.github.io/HTML5_Engine/superpang.html" target="_blank">Super Pang</a> example.
+
 ---
 
 ### `DrawImageSectionBasic` — sprite-sheet crop, top-left

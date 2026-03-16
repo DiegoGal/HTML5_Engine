@@ -35,6 +35,7 @@ Explore the `src/examples/` directory for practical demonstrations of the engine
 - [Columns](../columns.html ':target=_blank')
 - [Puzzle Bobble](../puzzlebobble.html ':target=_blank')
 - [Pacmon](../pacmon.html ':target=_blank') *(WIP)* — Pac-Man implementation
+- [Super Pang](../superpang.html ':target=_blank') — arcade balloon-popping game; demonstrates `CircleCollider` + dynamically-resized `RectangleCollider`, `SpriteObject.DrawSection` with a static section lookup table, color-key transparency (`bgColor`), and a multi-level game loop with lives, timer, and HUD labels
 
 ---
 

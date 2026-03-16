@@ -81,6 +81,21 @@ this.audioAssets = {
 
 After loading, `img` / `audio` are populated and accessible anywhere as `this.graphicAssets.player.img`.
 
+#### Color-key transparency
+
+Some older sprite sheets (especially from retro games) use a solid background colour instead of a proper alpha channel to mark transparent pixels. Add a `bgColor` field to any image asset entry and the engine will automatically zero out every pixel that exactly matches that hex colour before the image is used anywhere:
+
+```javascript
+this.graphicAssets = {
+    player:  { path: "assets/player.png",  img: null, bgColor: "#FF00FF" },
+    tileset: { path: "assets/tileset.png", img: null }, // no bgColor → loaded as-is
+};
+```
+
+The colour-key pass happens once at load time (the result is cached as an offscreen `<canvas>`), so there is no per-frame cost. The processed image is a drop-in replacement for the raw `Image` — use it exactly the same way with `DrawImage`, `DrawImageSection`, `Sprite`, etc.
+
+> **Tip:** Use an image editor's colour-picker to find the exact hex value used in your sprite sheet. Common chroma-key colours are `#FF00FF` (magenta) and `#00FF00` (green).
+
 ### Config reference
 
 Set `this.config` in the constructor. `super.Start()` reads it to configure the renderer.

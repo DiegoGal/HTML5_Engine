@@ -230,6 +230,8 @@ class Player extends SpriteObject {
 }
 ```
 
+> **Real-world example:** the <a href="https://maxi-jp.github.io/HTML5_Engine/superpang.html" target="_blank">Super Pang</a> example uses both collider types together. `PangBall` has a `CircleCollider` and `PangShot` has a `RectangleCollider` whose size is updated every frame to match the wire's current length. Collision is detected on the ball side — `OnCollisionEnter` checks `otherCollider.go instanceof PangShot` and triggers the pop-and-split logic. The wire collider also demonstrates updating a collider's `position`, `rect`, and `boundingRadius` manually each frame for non-standard shapes.
+
 **2. Set a callback directly on the collider** (useful for standalone colliders):
 
 ```javascript
