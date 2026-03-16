@@ -1017,4 +1017,34 @@ function GetCanvasAbsolutePosition() {
     };
 }
 
-// #endgerion
+/**
+ * Applies a color-key (chroma-key) to an image: every pixel that exactly
+ * matches `hexColor` has its alpha set to 0.
+ * Returns an HTMLCanvasElement that can be used wherever an Image is expected.
+ * @param {HTMLImageElement} img
+ * @param {string} hexColor - CSS hex color, e.g. "#FF00FF"
+ * @returns {HTMLCanvasElement}
+ */
+function ApplyColorKey(img, hexColor) {
+    const offscreen = document.createElement('canvas');
+    offscreen.width  = img.width;
+    offscreen.height = img.height;
+    const ctx = offscreen.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const keyR = parseInt(hexColor.slice(1, 3), 16);
+    const keyG = parseInt(hexColor.slice(3, 5), 16);
+    const keyB = parseInt(hexColor.slice(5, 7), 16);
+
+    const imageData = ctx.getImageData(0, 0, offscreen.width, offscreen.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+        if (data[i] === keyR && data[i + 1] === keyG && data[i + 2] === keyB) {
+            data[i + 3] = 0;
+        }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return offscreen;
+}
+
+// #endregion
