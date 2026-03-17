@@ -849,6 +849,23 @@ class Collider {
 }
 
 class RectangleCollider extends Collider {
+
+    get width() {
+        return this.rect.w;
+    }
+    get height() {
+        return this.rect.h;
+    }
+
+    set width(value) {
+        this.rect.w = value;
+        this._calculateBoundingRadius();
+    }
+    set height(value) {
+        this.rect.h = value;
+        this._calculateBoundingRadius();
+    }
+
     constructor(position, width, height, gameObject=null) {
         // const pos = gameObject ? new Vector2(position.x + width / 2, position.y + height / 2) : new Vector2(position.x, position.y);
         const boundingRadius = Math.sqrt(width * width + height * height) / 2;
@@ -869,6 +886,11 @@ class RectangleCollider extends Collider {
 
     IsPointInside(x, y) {
         return CheckPointInsideRectangle(x, y, this.rect.x, this.rect.y, this.rect.w, this.rect.h);
+    }
+
+    _calculateBoundingRadius() {
+        this.boundingRadius = Math.sqrt(this.rect.w * this.rect.w + this.rect.h * this.rect.h) / 2;
+        this.boundingRadius2 = this.boundingRadius * this.boundingRadius;
     }
 }
 
