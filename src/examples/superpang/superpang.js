@@ -19,11 +19,16 @@ const BALL_COLORS = [
 ];
 
 // Game states
-const STATE_PLAYING    = 0;
-const STATE_DEAD       = 1;
-const STATE_WIN        = 2;
-const STATE_RESPAWNING = 3;
-const STATE_LEVEL_WIN  = 4;
+const GameState = {
+    STATE_INTRO      : 0,
+    STATE_PLAYING    : 1,
+    STATE_DEAD       : 2,
+    STATE_WIN        : 3,
+    STATE_RESPAWNING : 4,
+    STATE_LEVEL_WIN  : 5
+};
+
+
 
 // -------------------------------------------------------
 // Level definitions
@@ -49,6 +54,14 @@ const LEVELS = [
     ]},
 ];
 
+// Level background sprite source rectangle
+const levelBackgroundRects = [
+    { x:   8, y:   8, w: 256, h: 190 },
+    { x: 272, y:   8, w: 256, h: 190 },
+    { x:   8, y: 208, w: 256, h: 190 },
+    { x: 272, y: 208, w: 256, h: 190 },
+];
+
 // -------------------------------------------------------
 // SuperPang - main game class
 // -------------------------------------------------------
@@ -72,25 +85,29 @@ class SuperPang extends Game {
         this.player        = null;
         this.shot          = null;
         this.balls         = [];
-        this.state         = STATE_PLAYING;
+        this.state         = GameState.STATE_PLAYING;
         this.score         = 0;
         this.lives         = 3;
         this.level         = 0;
         this.timer         = 0;
         this._respawnTimer = 0;
 
-        this.topLine = 15;
+        this.topLine   = 15;
         this.floorLine = 368;
-        this.leftWall = 15;
+        this.leftWall  = 15;
         this.rightWall = 497;
-        this.bgSprite = null;
+        this.bgSprite  = null;
+
+        this._introLogoY      = 0;  // current logo Y (animated)
+        this._introLogoTarget = 0;  // resting Y position
+        this._introLogoSpeed  = 500;
 
         this.livesLabel = null;
         this.scoreLabel = null;
         this.levelLabel = null;
         this.timerLabel = null;
 
-        debugMode = true;
+        // debugMode = true;
     }
 
     Start() {
@@ -98,10 +115,15 @@ class SuperPang extends Game {
 
         this.score  = 0;
         this.lives  = 3;
-        this.level  = 0;
-        this.player = null; // already cleared by super.Start()
-        this.shot   = null;
-        this.balls  = [];
+
+        // Allow starting from a specific level via ?level=N (0-based, clamped to valid range)
+        const params = new URLSearchParams(window.location.search);
+        const startLevel = parseInt(params.get('level'), 10);
+        const hasLevelParam = !isNaN(startLevel) && startLevel >= 0 && startLevel < LEVELS.length;
+        this.level = hasLevelParam ? startLevel : 0;
+
+        this.shot  = null;
+        this.balls = [];
 
         this.bgSprite = new Sprite(this.graphicAssets.backgrounds.img, new Vector2(0, 0), 0, 2);
 
@@ -110,7 +132,15 @@ class SuperPang extends Game {
         this.timerLabel = new TextLabel(this.timer, new Vector2(this.screenHalfWidth + 10, this.screenHeight - 2), "32px monospace", Color.yellow, "left", "bottom");
         this.levelLabel = new TextLabel(String(this.level + 1).padStart(2, '0'), new Vector2(this.screenWidth - 80, this.screenHeight - 2), "32px monospace", Color.yellow, "right", "bottom");
 
-        this._startLevel();
+        if (hasLevelParam) {
+            this._startLevel();
+        }
+        else {
+            // Show intro screen: logo drops from the top to the vertical center
+            this._introLogoY      = -120;
+            this._introLogoTarget = this.screenHalfHeight;
+            this.state            = GameState.STATE_INTRO;
+        }
     }
 
     _spawnBall(position, sizeIndex, dirX) {
@@ -144,7 +174,7 @@ class SuperPang extends Game {
         // Reset timer and state
         this.timer = LEVELS[this.level].time;
         this.timerLabel.text = String(Math.ceil(this.timer)).padStart(3, '0');
-        this.state = STATE_PLAYING;
+        this.state = GameState.STATE_PLAYING;
 
         // Spawn balls for this level
         LEVELS[this.level].balls.forEach(b => {
@@ -158,17 +188,17 @@ class SuperPang extends Game {
 
     // Handles player death: decrements lives and either respawns or ends the game
     PlayerDied() {
-        if (this.state !== STATE_PLAYING)
+        if (this.state !== GameState.STATE_PLAYING)
             return; // guard against double-trigger
 
         this.lives--;
         this.livesLabel.text = this.lives;
 
         if (this.lives <= 0) {
-            this.state = STATE_DEAD;
+            this.state = GameState.STATE_DEAD;
         }
         else {
-            this.state = STATE_RESPAWNING;
+            this.state = GameState.STATE_RESPAWNING;
             this._respawnTimer = 2;
         }
     }
@@ -202,10 +232,10 @@ class SuperPang extends Game {
         // Check win condition
         if (this.balls.length === 0) {
             if (this.level + 1 >= LEVELS.length) {
-                this.state = STATE_WIN;
+                this.state = GameState.STATE_WIN;
             }
             else {
-                this.state = STATE_LEVEL_WIN;
+                this.state = GameState.STATE_LEVEL_WIN;
                 this._respawnTimer = 2;
             }
         }
@@ -223,38 +253,67 @@ class SuperPang extends Game {
         if (Input.IsKeyDown(KEY_F))
             this.config.collidersOnly = !this.config.collidersOnly;
 
-        if (this.state === STATE_PLAYING) {
-            super.Update(deltaTime);
-
-            // Countdown timer
-            this.timer -= deltaTime;
-            this.timerLabel.text = String(Math.ceil(this.timer)).padStart(3, '0');
-            if (this.timer <= 0) {
-                this.timer = 0;
-                this.PlayerDied();
-            }
-        }
-        else if (this.state === STATE_RESPAWNING || this.state === STATE_LEVEL_WIN) {
-            this._respawnTimer -= deltaTime;
-            if (this._respawnTimer <= 0) {
-                if (this.state === STATE_LEVEL_WIN) {
-                    this.level++;
-                    this.levelLabel.text = String(this.level + 1).padStart(2, '0');
+        switch (this.state) {
+            case GameState.STATE_INTRO:
+                // Animate logo dropping down
+                if (this._introLogoY < this._introLogoTarget) {
+                    this._introLogoY = Math.min(
+                        this._introLogoY + this._introLogoSpeed * deltaTime,
+                        this._introLogoTarget
+                    );
                 }
-                this._startLevel();
-            }
-        }
 
-        // Restart on Enter only after game over or final win
-        if ((this.state === STATE_DEAD || this.state === STATE_WIN) && Input.IsKeyPressed(KEY_ENTER)) {
-            this.Start();
+                // Any key / mouse click once logo has settled starts the game
+                if (this._introLogoY >= this._introLogoTarget &&
+                    (Input.keyboard.anyKeyPressed || Input.IsMouseDown())) {
+                    this._startLevel();
+                }
+                break;
+
+            case GameState.STATE_PLAYING:
+                super.Update(deltaTime);
+
+                // Countdown timer
+                this.timer -= deltaTime;
+                this.timerLabel.text = String(Math.ceil(this.timer)).padStart(3, '0');
+                if (this.timer <= 0) {
+                    this.timer = 0;
+                    this.PlayerDied();
+                }
+            break;
+
+            case GameState.STATE_RESPAWNING:
+            case GameState.STATE_LEVEL_WIN:
+                this._respawnTimer -= deltaTime;
+                if (this._respawnTimer <= 0) {
+                    if (this.state === GameState.STATE_LEVEL_WIN) {
+                        this.level++;
+                        this.levelLabel.text = String(this.level + 1).padStart(2, '0');
+                    }
+                    this._startLevel();
+                }
+            break;
+
+            case GameState.STATE_DEAD:
+            case GameState.STATE_WIN:
+                // Restart on Enter only after game over or final win
+                if (Input.IsKeyPressed(KEY_ENTER)) {
+                    this.Start();
+                }
+            break;
         }
     }
 
     Draw() {
         // Background
         this.renderer.DrawFillBasicRectangle(0, 0, this.screenWidth, this.screenHeight, Color.black);
-        this.bgSprite.DrawSectionBasicAt(this.renderer, 272, 8, 256, 190, 0, 0);
+        const bgRect = levelBackgroundRects[this.level];
+        this.bgSprite.DrawSectionBasicAt(this.renderer, bgRect.x, bgRect.y, bgRect.w, bgRect.h, 0, 0);
+
+        if (this.state === GameState.STATE_INTRO) {
+            this._drawIntro();
+            return;
+        }
 
         // Floor line
         this.renderer.DrawLine(0, this.floorLine, this.screenWidth, this.floorLine, Color.red, 1);
@@ -274,16 +333,16 @@ class SuperPang extends Game {
         this.timerLabel.Draw(this.renderer);
 
         // Overlays
-        if (this.state === STATE_DEAD) {
+        if (this.state === GameState.STATE_DEAD) {
             this._drawOverlay("GAME OVER", "Press ENTER to restart", new Color(0.8, 0.1, 0.1, 0.75));
         }
-        else if (this.state === STATE_WIN) {
+        else if (this.state === GameState.STATE_WIN) {
             this._drawOverlay("YOU WIN!", "Press ENTER to play again", new Color(0.1, 0.6, 0.1, 0.75));
         }
-        else if (this.state === STATE_RESPAWNING) {
+        else if (this.state === GameState.STATE_RESPAWNING) {
             this._drawOverlay(`Lives: ${this.lives}`, "Get ready...", new Color(0.8, 0.5, 0.1, 0.75));
         }
-        else if (this.state === STATE_LEVEL_WIN) {
+        else if (this.state === GameState.STATE_LEVEL_WIN) {
             this._drawOverlay(`Level ${this.level + 1} Clear!`, "Get ready...", new Color(0.1, 0.5, 0.8, 0.75));
         }
     }
@@ -298,6 +357,26 @@ class SuperPang extends Game {
         this.renderer.DrawFillBasicRectangle(0, this.screenHalfHeight - 70, this.screenWidth, 140, bgColor);
         this.renderer.DrawFillText(title,    this.screenHalfWidth, this.screenHalfHeight - 18, "bold 52px monospace", Color.white, "center", "bottom");
         this.renderer.DrawFillText(subtitle, this.screenHalfWidth, this.screenHalfHeight + 36, "20px monospace",      Color.white, "center", "bottom");
+    }
+
+    _drawIntro() {
+        const cx = this.screenHalfWidth;
+        const y  = this._introLogoY;
+
+        // Logo shadow
+        this.renderer.DrawFillText("SUPER PANG", cx + 4, y + 4,  "bold 72px monospace", new Color(0, 0, 0, 0.6),    "center", "middle");
+        // Logo outer stroke (drawn slightly offset for a thick-border effect)
+        this.renderer.DrawFillText("SUPER PANG", cx - 2, y,      "bold 72px monospace", new Color(0.6, 0.1, 0.05),  "center", "middle");
+        this.renderer.DrawFillText("SUPER PANG", cx + 2, y,      "bold 72px monospace", new Color(0.6, 0.1, 0.05),  "center", "middle");
+        this.renderer.DrawFillText("SUPER PANG", cx,     y - 2,  "bold 72px monospace", new Color(0.6, 0.1, 0.05),  "center", "middle");
+        this.renderer.DrawFillText("SUPER PANG", cx,     y + 2,  "bold 72px monospace", new Color(0.6, 0.1, 0.05),  "center", "middle");
+        // Logo fill
+        this.renderer.DrawFillText("SUPER PANG", cx,     y,      "bold 72px monospace", new Color(1.0, 0.85, 0.1),  "center", "middle");
+
+        // "Press any key" prompt — only shown once the logo has settled
+        if (this._introLogoY >= this._introLogoTarget) {
+            this.renderer.DrawFillText("Press any key to start", cx, y + 60, "20px monospace", Color.white, "center", "middle");
+        }
     }
 }
 
@@ -394,11 +473,11 @@ class PangPlayer extends SSAnimationObjectComplex {
     }
 
     Draw(renderer) {
-        const headR = this.width * 0.5;
+        // const headR = this.width * 0.5;
         // Body
-        renderer.DrawFillRectangle(this.position.x, this.position.y, this.width, this.height, this.color);
+        // renderer.DrawFillRectangle(this.position.x, this.position.y, this.width, this.height, this.color);
         // Head
-        renderer.DrawFillCircle(this.position.x, this.position.y - this.height * 0.5, headR, Color.pink);
+        // renderer.DrawFillCircle(this.position.x, this.position.y - this.height * 0.5, headR, Color.pink);
 
         super.Draw(renderer);
     }
@@ -415,6 +494,11 @@ class PangPlayer extends SSAnimationObjectComplex {
 // PangShot - the harpoon/wire shot upward by the player
 // -------------------------------------------------------
 class PangShot extends GameObject {
+
+    static _darkYellow     = new Color(0.55, 0.45, 0.0);
+    static _lightYellow    = new Color(1.0 , 0.95, 0.4);
+    static _arrowheadColor = new Color(1.0 , 0.85, 0.1);
+
     constructor(x) {
         super(new Vector2(x, game.floorLine));
         this.width  = 4;
@@ -428,7 +512,8 @@ class PangShot extends GameObject {
     Start() {
         const wireHeight = game.floorLine - this.top;
         const wireCenterY = this.top + wireHeight * 0.5;
-        this.collider = new RectangleCollider(new Vector2(this._shotX, wireCenterY), this.width, wireHeight, this);
+        this.position.x = this._shotX - this.width * 0.5;
+        this.collider = new RectangleCollider(Vector2.Zero(), this.width, wireHeight, this);
         game.AddCollider(this.collider);
     }
 
@@ -438,16 +523,14 @@ class PangShot extends GameObject {
             this.top = game.topLine;
             game.DestroyShot();
         }
-        // Update collider manually to cover the wire from top to bottom
+        // Update the position manually to cover the wire from top to bottom
         const wireHeight = game.floorLine - this.top;
         const wireCenterY = this.top + wireHeight * 0.5;
-        this.collider.position.Set(this._shotX, wireCenterY);
-        this.collider.rect.x = this._shotX - this.width * 0.5;
-        this.collider.rect.y = this.top;
-        this.collider.rect.w = this.width;
-        this.collider.rect.h = wireHeight;
-        this.collider.boundingRadius = Math.max(this.width, wireHeight) * 0.5;
-        this.collider.boundingRadius2 = this.collider.boundingRadius * this.collider.boundingRadius;
+
+        this.position.y = wireCenterY;
+        this.collider.height = wireHeight;
+
+        super.Update(deltaTime); // updates collider
     }
 
     Draw(renderer) {
@@ -456,15 +539,15 @@ class PangShot extends GameObject {
         const wireH   = game.floorLine - wireTop;
 
         // Wire: dark outer strip + bright center for a 3D cable look
-        renderer.DrawFillBasicRectangle(x - 2, wireTop, 4, wireH, new Color(0.55, 0.45, 0.0));
-        renderer.DrawFillBasicRectangle(x - 1, wireTop, 2, wireH, new Color(1.0,  0.95, 0.4));
+        renderer.DrawFillBasicRectangle(x - 2, wireTop, 4, wireH, PangShot._darkYellow);
+        renderer.DrawFillBasicRectangle(x - 1, wireTop, 2, wireH, PangShot._lightYellow);
 
         // Arrowhead triangle at the tip
         renderer.DrawPolygon([
             { x: x,     y: this.top },
             { x: x - 5, y: this.top + 10 },
             { x: x + 5, y: this.top + 10 }
-        ], new Color(0.55, 0.45, 0.0), 1, true, new Color(1.0, 0.85, 0.1));
+        ], PangShot._darkYellow, 1, true, PangShot._arrowheadColor);
     }
 
     OnCollisionEnter(myCollider, otherCollider) {
