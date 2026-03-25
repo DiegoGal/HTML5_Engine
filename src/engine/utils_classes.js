@@ -539,6 +539,10 @@ class Rectangle {
     Draw(renderer) {
         renderer.DrawRectangle(this.position.x, this.position.y, this.width, this.height, this.color, this.stroke, this.lineWidth, 0, this.pivot);
     }
+
+    DrawBasic(renderer) {
+        renderer.DrawBasicRectangle(this.position.x, this.position.y, this.width, this.height, this.color, this.stroke, this.lineWidth);
+    }
 }
 
 class Circle {
