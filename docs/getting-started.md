@@ -329,7 +329,7 @@ Key points:
 - Set `this.active = false` on an object to stop it being updated and drawn (useful for pooling or death states).
 - Override `OnCollisionEnter(myCollider, otherCollider)` on a `GameObject` to react to collider intersections (see [Utilities](utilities.md) for the collider API).
 
-See the full examples in `src/examples/` — [BrokeOut](../brokeout.html ':target=_blank'), [Snake](../snake.html ':target=_blank'), and [Floppy Derp](../floppyderp.html ':target=_blank') are good starting points.
+See the full examples in `src/examples/` — [BrokeOut](../brokeout.html ':ignore :target=_blank'), [Snake](../snake.html ':ignore :target=_blank'), and [Floppy Derp](../floppyderp.html ':ignore :target=_blank') are good starting points.
 
 ---
 
@@ -354,5 +354,5 @@ class MyGame extends Game {
 
 > **Important:** Always use `this.screenWidth` and `this.screenHeight` instead of `canvas.width` and `canvas.height` for proper fullscreen compatibility.
 
-💡 See the [Canvas Resizing Demo](../canvas-resize.html ':target=_blank') for an interactive example of all display options.
+💡 See the [Canvas Resizing Demo](../canvas-resize.html ':ignore :target=_blank') for an interactive example of all display options.
 

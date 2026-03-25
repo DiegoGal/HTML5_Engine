@@ -59,6 +59,7 @@ Documentation can be consulted [here](https://maxi-jp.github.io/HTML5_Engine/doc
   - canvas_resizing.js    # Canvas fullscreen and display configuration demo
   - coliders_test.js      # Collision detection testing
   - columns.js            # Columns-style puzzle game
+  - gamepad_tester.js     # Interactive gamepad visualiser (buttons, sticks, triggers)
   - input_actions_test.js # Abstract input system example
   - input_test.js         # Basic input system testing
   - lines_intersection.js # Line intersection algorithms

@@ -296,6 +296,8 @@ new LinearGradient(renderer, direction, colorStops)
 | `AddColorStop(offset, color)` | Add a new color stop |
 | `SetColorStop(index, color)` | Update an existing stop's color (useful for animated gradients) |
 
+> **Real-world example:** the <a href="https://maxi-jp.github.io/HTML5_Engine/gamepad-tester.html" target="_blank">Gamepad Tester</a> uses a diagonal `LinearGradient` as a full-screen background and calls `SetColorStop()` at runtime to switch the palette when a different controller brand is detected (Xbox green, PlayStation blue, Nintendo red, or a neutral grey fallback).
+
 ---
 
 ## Camera Transform

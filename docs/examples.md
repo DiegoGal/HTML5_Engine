@@ -5,56 +5,57 @@ Explore the `src/examples/` directory for practical demonstrations of the engine
 ## Engine Systems
 
 ### Renderers
-- [Canvas 2D render test](../render_test.html ':target=_blank') — exercises renderer methods for primitives, sprites, animations, and more
-- [WebGL render test](../render_test.html?webgl ':target=_blank') — same project using the WebGL renderer
-- [Canvas resizing & fullscreen](../canvas-resize.html ':target=_blank') — interactive demo of all canvas display options
+- [Canvas 2D render test](../render_test.html ':ignore :target=_blank') — exercises renderer methods for primitives, sprites, animations, and more
+- [WebGL render test](../render_test.html?webgl ':ignore :target=_blank') — same project using the WebGL renderer
+- [Canvas resizing & fullscreen](../canvas-resize.html ':ignore :target=_blank') — interactive demo of all canvas display options
 
 ### Input
-- [Basic input test](../inputtest.html ':target=_blank')
-- [Input Actions test](../input_actions_test.html ':target=_blank') — abstract input system with Actions and Axes
+- [Basic input test](../inputtest.html ':ignore :target=_blank')
+- [Input Actions test](../input_actions_test.html ':ignore :target=_blank') — abstract input system with Actions and Axes
+- [Gamepad Tester](../gamepad-tester.html ':ignore :target=_blank') — interactive gamepad visualiser; shows button presses, stick positions with trail history, and trigger values; background gradient updates dynamically to match the detected controller brand (Xbox, PlayStation's DualSense, Nintendo's Switch Pro Controller)
 
 ### Other systems
-- [Audio system test](../audiotest.html ':target=_blank')
-- [Colliders test](../colliders.html ':target=_blank')
-- [Object pooling](../object_pooling.html ':target=_blank')
-- [Particle System](../particles.html ':target=_blank') — smoke (area and point emitters), rain, and snow presets
-- [Tileset](../tileset.html ':target=_blank') *(WIP)*
-- [Parallax](../parallax.html ':target=_blank') *(WIP)*
+- [Audio system test](../audiotest.html ':ignore :target=_blank')
+- [Colliders test](../colliders.html ':ignore :target=_blank')
+- [Object pooling](../object_pooling.html ':ignore :target=_blank')
+- [Particle System](../particles.html ':ignore :target=_blank') — smoke (area and point emitters), rain, and snow presets
+- [Tileset](../tileset.html ':ignore :target=_blank') *(WIP)*
+- [Parallax](../parallax.html ':ignore :target=_blank') *(WIP)*
 
 ---
 
 ## Example Games
 
-- [BrokeOut](../brokeout.html ':target=_blank') — basic Breakout clone
-- [Floppy Derp](../floppyderp.html ':target=_blank') — Flappy Bird-like game
-- [Twin Stick Shooter](../twin-stick-shooter.html ':target=_blank')
-- [Twin Stick Shooter 2](../tts-complex.html ':target=_blank') — more complex version
-- [Basic Tetris](../tetrisbasic.html ':target=_blank')
-- [Complex Tetris](../tetriscomplex.html ':target=_blank') — modern gameplay features
-- [Snake](../snake.html ':target=_blank')
-- [Columns](../columns.html ':target=_blank')
-- [Puzzle Bobble](../puzzlebobble.html ':target=_blank')
-- [Pacmon](../pacmon.html ':target=_blank') *(WIP)* — Pac-Man implementation
-- [Super Pang](../superpang.html ':target=_blank') — arcade balloon-popping game; demonstrates `CircleCollider` + dynamically-resized `RectangleCollider`, `SpriteObject.DrawSection` with a static section lookup table, color-key transparency (`bgColor`), and a multi-level game loop with lives, timer, and HUD labels
+- [BrokeOut](../brokeout.html ':ignore :target=_blank') — basic Breakout clone
+- [Floppy Derp](../floppyderp.html ':ignore :target=_blank') — Flappy Bird-like game
+- [Twin Stick Shooter](../twin-stick-shooter.html ':ignore :target=_blank')
+- [Twin Stick Shooter 2](../tts-complex.html ':ignore :target=_blank') — more complex version
+- [Basic Tetris](../tetrisbasic.html ':ignore :target=_blank')
+- [Complex Tetris](../tetriscomplex.html ':ignore :target=_blank') — modern gameplay features
+- [Snake](../snake.html ':ignore :target=_blank')
+- [Columns](../columns.html ':ignore :target=_blank')
+- [Puzzle Bobble](../puzzlebobble.html ':ignore :target=_blank')
+- [Pacmon](../pacmon.html ':ignore :target=_blank') *(WIP)* — Pac-Man implementation
+- [Super Pang](../superpang.html ':ignore :target=_blank') — arcade balloon-popping game; demonstrates `CircleCollider` + dynamically-resized `RectangleCollider`, `SpriteObject.DrawSection` with a static section lookup table, color-key transparency (`bgColor`), and a multi-level game loop with lives, timer, and HUD labels
 
 ---
 
 ## UI & Menus
 
-- [HTML + CSS main menu](../menu.html ':target=_blank')
-- [HTML + CSS menu and game UI](../menu-and-ui.html ':target=_blank') — interactions between HTML menus and game layers
+- [HTML + CSS main menu](../menu.html ':ignore :target=_blank')
+- [HTML + CSS menu and game UI](../menu-and-ui.html ':ignore :target=_blank') — interactions between HTML menus and game layers
 
 ---
 
 ## Box2D Physics
 
-- [Box2D basic](../box2d-basic.html ':target=_blank')
-- [Box2D basket](../box2d-basket.html ':target=_blank')
-- [Box2D platformer](../box2d-platformer.html ':target=_blank') *(WIP)*
+- [Box2D basic](../box2d-basic.html ':ignore :target=_blank')
+- [Box2D basket](../box2d-basket.html ':ignore :target=_blank')
+- [Box2D platformer](../box2d-platformer.html ':ignore :target=_blank') *(WIP)*
 
 ---
 
 ## Other
 
-- [Mode 7](../mode7.html ':target=_blank') — SNES-style pseudo-3D effect *(very WIP)*
-- [Lines intersection](../linesintersection.html ':target=_blank')
+- [Mode 7](../mode7.html ':ignore :target=_blank') — SNES-style pseudo-3D effect *(very WIP)*
+- [Lines intersection](../linesintersection.html ':ignore :target=_blank')

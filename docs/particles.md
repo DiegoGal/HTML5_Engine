@@ -218,6 +218,6 @@ Draw() {
 
 ## Live Demo
 
-See it in action: [Particle System demo](../particles.html ':target=_blank')
+See it in action: [Particle System demo](../particles.html ':ignore :target=_blank')
 
 Source: `src/examples/particles/particles_example.js` — showcases smoke (area and point emitters), rain, and snow presets.
