@@ -62,6 +62,7 @@ Documentation can be consulted [here](https://maxi-jp.github.io/HTML5_Engine/doc
   - gamepad_tester.js     # Interactive gamepad visualiser (buttons, sticks, triggers)
   - input_actions_test.js # Abstract input system example
   - input_test.js         # Basic input system testing
+  - rumble_test.js        # Gamepad haptic/rumble feedback demo
   - lines_intersection.js # Line intersection algorithms
   - object_pooling.js     # Object pooling performance demo
   - performance_test.js   # Performance benchmarking

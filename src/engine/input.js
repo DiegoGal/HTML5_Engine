@@ -199,6 +199,7 @@ var Input = {
     // Abstract input mapping
     actionMaps: {},
     axisMaps: {},
+    rumbleMaps: {},
     
     // Canvas and coordinate transformation cache
     _canvas: null,
@@ -327,6 +328,7 @@ var Input = {
     ClearMappings: function() {
         this.actionMaps = {};
         this.axisMaps = {};
+        this.rumbleMaps = {};
     },
 
     /**
@@ -516,6 +518,37 @@ var Input = {
         // Clamp to [-1, 1]
         return Math.max(-1.0, Math.min(1.0, finalAxisValue));
     },
+    /**
+     * Registers a named rumble preset.
+     * @param {string} id A unique name for this preset (e.g., "Hit", "Explosion").
+     * @param {number} [strong=1]    Low-frequency motor intensity, 0–1.
+     * @param {number} [weak=1]      High-frequency motor intensity, 0–1.
+     * @param {number} [duration=200] Duration in milliseconds.
+     * @param {number} [delay=0]     Start delay in milliseconds.
+     */
+    RegisterRumble: function(id, strong = 1, weak = 1, duration = 200, delay = 0) {
+        this.rumbleMaps[id] = {
+            strong: strong,
+            weak: weak,
+            duration: duration,
+            delay: delay
+        };
+    },
+
+    /**
+     * Fires a previously registered rumble preset on gamepad 0.
+     * @param {string} id The id passed to RegisterRumble.
+     * @param {number} [gamepadIndex=0] Target gamepad index.
+     */
+    ExecuteRumble: function(id, gamepadIndex = 0) {
+        const preset = this.rumbleMaps[id];
+        if (!preset) {
+            console.warn(`Input.ExecuteRumble: unknown rumble id "${id}"`);
+            return;
+        }
+        this.RumbleGamepad(gamepadIndex, preset.strong, preset.weak, preset.duration, preset.delay);
+    },
+
 // #endregion
 
 // #region Keyboard and Mouse Events
@@ -665,6 +698,31 @@ var Input = {
             return gamepad.gamepad.buttons[gamepad.mapping.triggers[trigger]].value || 0;
         }
         return 0;
+    },
+
+    /**
+     * Triggers haptic rumble on a gamepad.
+     * @param {number} gamepadIndex Index of the gamepad (usually 0).
+     * @param {number} [strongMagnitude=1] Low-frequency (strong) motor intensity, 0–1.
+     * @param {number} [weakMagnitude=1] High-frequency (weak) motor intensity, 0–1.
+     * @param {number} [duration=200] Duration in milliseconds.
+     * @param {number} [startDelay=0] Delay before the effect starts, in milliseconds.
+     */
+    RumbleGamepad: function(gamepadIndex, strongMagnitude = 1, weakMagnitude = 1, duration = 200, startDelay = 0) {
+        const gamepad = this.gamepads[gamepadIndex];
+        if (!gamepad)
+            return;
+        
+        const actuator = gamepad.gamepad.vibrationActuator;
+        if (!actuator)
+            return;
+        
+        actuator.playEffect(actuator.type || "dual-rumble", {
+            duration,
+            startDelay,
+            strongMagnitude: Math.max(0, Math.min(1, strongMagnitude)),
+            weakMagnitude:   Math.max(0, Math.min(1, weakMagnitude)),
+        });
     },
 // #endregion
 

@@ -4,6 +4,7 @@ The engine provides two levels of input:
 
 - [**Direct input**](#direct-input) — query specific keys, mouse buttons, and gamepad buttons directly. Great for quick prototyping or simple games.
 - [**Abstract input (Actions & Axes)**](#advanced-input-actions-amp-axes) — map named actions/axes to any device. Recommended for complex or controller-aware games.
+- [**Rumble / Haptic Feedback**](#rumble--haptic-feedback) — trigger vibration on controllers that support it.
 
 ---
 
@@ -142,6 +143,93 @@ Update(deltaTime) {
 }
 ```
 
+### Rumble / Haptic Feedback
+
+Controllers that support the [Gamepad Vibration API](https://developer.mozilla.org/en-US/docs/Web/API/GamepadHapticActuator) can be made to rumble with a single call.
+
+`Input.RumbleGamepad(gamepadIndex, strongMagnitude, weakMagnitude, duration, startDelay)`
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `gamepadIndex` | `number` | — | Index of the target gamepad (usually `0`) |
+| `strongMagnitude` | `number` | `1` | Low-frequency (heavy) motor intensity, `0`–`1` |
+| `weakMagnitude` | `number` | `1` | High-frequency (light) motor intensity, `0`–`1` |
+| `duration` | `number` | `200` | How long the effect lasts, in milliseconds |
+| `startDelay` | `number` | `0` | Delay before the effect starts, in milliseconds |
+
+Both magnitudes are clamped to `[0, 1]`. The call is a safe no-op when the controller is disconnected or its actuator is not available.
+
+> **Browser support:** Chrome and Edge support this unconditionally. Firefox requires a flag. Safari does not support it. The engine guards against missing actuators so the call never throws.
+
+**One-shot hit feedback** — short heavy pulse when something impactful happens:
+```javascript
+Input.RumbleGamepad(0, 1, 0.5, 250);
+```
+
+**Differentiate the two motors** — strong motor for deep rumble, weak for surface buzz:
+```javascript
+// Engine idle: low-frequency only
+Input.RumbleGamepad(0, 0.6, 0.1, 1000);
+
+// High-frequency buzz (e.g. electric shock, rapid fire)
+Input.RumbleGamepad(0, 0, 1, 400);
+```
+
+**Trigger-driven intensity** — rumble proportional to how hard the player pulls the triggers:
+```javascript
+Update(deltaTime) {
+    super.Update(deltaTime);
+
+    const lt = Input.GetGamepadTriggerValue(0, 'LT');
+    const rt = Input.GetGamepadTriggerValue(0, 'RT');
+
+    // Only rumble above a small dead-zone to avoid constant low-level noise
+    if (lt > 0.05 || rt > 0.05) {
+        // LT → strong (low-freq) motor; RT → weak (high-freq) motor
+        Input.RumbleGamepad(0, lt, rt, 100);
+    }
+}
+```
+
+**Delayed secondary pulse** — chain two effects, e.g. explosion then debris:
+```javascript
+Input.RumbleGamepad(0, 1,   0.3, 200,   0);   // main blast
+Input.RumbleGamepad(0, 0.2, 0.6, 400, 250);   // debris vibration after 250 ms
+```
+
+> **Real-world example:** the <a href="https://maxi-jp.github.io/HTML5_Engine/rumble-test.html" target="_blank">Rumble Test</a> demonstrates four named presets (Tap, Impact, Engine, Buzz) and a live custom section where LT/RT control motor intensity before firing.
+
+### Rumble presets
+
+Just like Actions and Axes, rumble effects can be registered by name and fired by id — keeping game logic clean and effects easy to tweak in one place.
+
+```javascript
+Start() {
+    super.Start();
+    Input.ClearMappings();
+
+    // Input.RegisterRumble("rumble id", strongMagnitude, weakMagnitude, duration, startDelay);
+    Input.RegisterRumble("Hit",       0.8, 0.4, 150);
+    Input.RegisterRumble("Explosion", 1,   0.6, 400);
+    Input.RegisterRumble("Engine",    0.5, 0.1, 800, 0);
+}
+```
+
+Then fire them anywhere in your game:
+
+```javascript
+// On bullet hit
+Input.ExecuteRumble("Hit");
+
+// On explosion — fire on any connected gamepad
+Input.ExecuteRumble("Explosion");
+
+// Fire on a specific controller index
+Input.ExecuteRumble("Engine", 1);
+```
+
+Unknown ids log a `console.warn` and are otherwise silently ignored.
+
 ---
 
 ## Advanced Input: Actions & Axes
@@ -245,7 +333,7 @@ Returns `true` only during the single frame a mapped input is released.
 Returns a float between `-1.0` and `1.0` representing the current axis state.
 
 #### `ClearMappings()`
-Removes all previously registered actions and axes.
+Removes all previously registered actions, axes, and rumble presets.
 
 ---
 
@@ -300,3 +388,12 @@ Returns a float between `0.0` and `1.0` for the specified trigger (`'LT'` or `'R
 
 #### `GetGamepadStickDirection(gamepadIndex, stick, direction)`
 Returns `true` if the stick is pushed past the deadzone in the given direction (`'UP'`, `'DOWN'`, `'LEFT'`, `'RIGHT'`).
+
+#### `RumbleGamepad(gamepadIndex, strongMagnitude, weakMagnitude, duration, startDelay)`
+Triggers haptic feedback on a gamepad. See [Rumble / Haptic Feedback](#rumble--haptic-feedback) for the full parameter table, browser support notes, and code examples.
+
+#### `RegisterRumble(id, strong, weak, duration, delay)`
+Registers a named rumble preset. `preset` fields: `strong` (0–1), `weak` (0–1), `duration` (ms), `delay` (ms) — all optional, defaults to `1`, `1`, `200`, `0`.
+
+#### `ExecuteRumble(id, gamepadIndex)`
+Fires a previously registered preset. `gamepadIndex` defaults to `0`. Logs a warning if the id is not found.

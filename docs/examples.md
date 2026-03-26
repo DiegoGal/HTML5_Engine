@@ -13,6 +13,7 @@ Explore the `src/examples/` directory for practical demonstrations of the engine
 - [Basic input test](../inputtest.html ':ignore :target=_blank')
 - [Input Actions test](../input_actions_test.html ':ignore :target=_blank') — abstract input system with Actions and Axes
 - [Gamepad Tester](../gamepad-tester.html ':ignore :target=_blank') — interactive gamepad visualiser; shows button presses, stick positions with trail history, and trigger values; background gradient updates dynamically to match the detected controller brand (Xbox, PlayStation's DualSense, Nintendo's Switch Pro Controller)
+- [Rumble Test](../rumble-test.html ':ignore :target=_blank') — demonstrates `Input.RumbleGamepad()`; four named presets (Tap, Impact, Engine, Buzz) mapped to face buttons and keyboard 1–4, plus a custom section where LT/RT control strong/weak motor intensity live
 
 ### Other systems
 - [Audio system test](../audiotest.html ':ignore :target=_blank')
