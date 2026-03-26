@@ -135,12 +135,18 @@ class RectangleGO extends GameObject {
     get height() {
         return this.rectangle.height;
     }
+    get color() {
+        return this.rectangle.color;
+    }
 
     set width(value) {
         this.rectangle.width = value;
     }
     set height(value) {
         this.rectangle.height = value;
+    }
+    set color(value) {
+        this.rectangle.color = value;
     }
 
     Draw(renderer) {
