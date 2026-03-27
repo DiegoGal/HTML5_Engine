@@ -247,3 +247,4 @@ new TextLabel(text, position, font, color, align, baseline, visible)
 
 - [HTML + CSS main menu](https://maxi-jp.github.io/HTML5_Engine/menu.html) — sliding menu with credits scroll
 - [HTML + CSS menu and in-game UI](https://maxi-jp.github.io/HTML5_Engine/menu-and-ui.html) — toggling upgrade panel with two-way data binding between HTML and canvas
+- [Rumble Test (HTML UI)](https://maxi-jp.github.io/HTML5_Engine/rumble-test-html.html) — HUD overlay built with `coverCanvas=true`; HTML controls float over the canvas while the canvas runs a pure animation layer underneath
