@@ -270,7 +270,8 @@ class MyGame extends Game {
         Input.RegisterAxis("MoveVertical", [
             { type: 'key', positive: KEY_S, negative: KEY_W },
             { type: 'key', positive: KEY_DOWN, negative: KEY_UP },
-            { type: 'gamepadaxis', stick: 'LS', axis: 1 }
+            { type: 'gamepadaxis', stick: 'LS', axis: 1 },
+            { type: 'gamepadbutton', positive: 'DPAD_DOWN', negative: 'DPAD_UP' }
         ]);
 
         // Trigger axis (0.0 – 1.0)

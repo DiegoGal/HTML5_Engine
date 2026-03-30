@@ -1,86 +1,250 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML5 Engine - Examples</title>
+    <title>spark.js — Playful HTML5 Game Engine</title>
+    <meta name="description" content="A lightweight, zero-dependency HTML5 canvas game engine for browser games. No build tools. No npm. Just JavaScript.">
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="shortcut icon" href="/favicon.ico" />
-    <link rel="stylesheet" href="css/style.css">
-    <script src="src/engine/main.js"></script>
-    <script src="src/engine/utils_math.js"></script>
-    <script src="src/engine/input.js"></script>
-    <script src="src/engine/audioplayer.js"></script>
-    <script src="src/engine/game.js"></script>
-    <script src="src/engine/utils_classes.js"></script>
-    <script src="src/engine/gameobjects.js"></script>
-    <script src="src/engine/htmlmenu.js"></script>
+    <link rel="stylesheet" href="css/landing.css">
 </head>
 <body>
-    <canvas id="myCanvas" width="640" height="480"></canvas>
-    <ul>
-        <li>Engine systems:</li>
-        <li>
-            <ul>
-                <li>Renderers:</li>
-                <li>
-                    <ul>
-                        <li><a href="./render_test.html">Canvas 2D API render test (primitives, sprites, animations...)</a></li>
-                        <li><a href="./render_test.html?webgl">WebGL render test (primitives, sprites, animations...)</a></li>
-                    </ul>
-                </li>
-                <li><a href="./inputtest.html">Basic input system test</a></li>
-                <li><a href="./input_actions_test.html">Input system test (with Actions and Axis events)</a></li>
-                <li><a href="./gamepad-tester.html">Basic Input->Gamepad tester</a></li>
-                <li><a href="./rumble-test.html">Gamepad rumble options and pressets</a></li>
-                <li><a href="./audiotest.html">Audio system test</a></li>
-                <li><a href="./colliders.html">Colliders test</a></li>
-                <li><a href="./canvas-resize.html">Canvas resizing</a></li>
-                <li><a href="./object_pooling.html">Object pooling</a></li>
-                <li><a href="./particles.html">Particle system (smoke, rain, snow...)</a></li>
-                <li><a href="./tileset.html">Tileset (WIP)</a></li>
-                <li><a href="./parallax.html">Parallax (WIP)</a></li>
-            </ul>
-        </li>
-        <li>Example games:</li>
-        <li>
-            <ul>
-                <li><a href="./brokeout.html">BrokeOut</a></li>
-                <li><a href="./floppyderp.html">Floppy Derp</a></li>
-                <li><a href="./twin-stick-shooter.html">Twin Stick Shooter</a></li>
-                <li><a href="./tts-complex.html">Twin Stick Shooter 2 (more complex)</a></li>
-                <li><a href="./tetrisbasic.html">Basic Tetris</a></li>
-                <li><a href="./tetriscomplex.html">Complex Tetris</a></li>
-                <li><a href="./snake.html">Snake</a></li>
-                <li><a href="./columns.html">Columns</a></li>
-                <li><a href="./puzzlebobble.html">Puzzle Bobble</a></li>
-                <li><a href="./pacmon.html">Pacmon (WIP)</a></li>
-                <li><a href="./superpang.html">Super Pang (WIP)</a></li>
-            </ul>
-        </li>
-        <li>UI and menus:</li>
-        <li>
-            <ul>
-                <li><a href="./menu.html">HTML + CSS main menu</a></li>
-                <li><a href="./menu-and-ui.html">HTML + CSS main menu and game UI</a></li>
-            </ul>
-        </li>
-        <li>Box2D:</li>
-        <li>
-            <ul>
-                <li><a href="./box2d-basic.html">Box2D basic</a></li>
-                <li><a href="./box2d-basket.html">Box2D basket</a></li>
-                <li><a href="./box2d-platformer.html">Box2D platformer (WIP)</a></li>
-            </ul>
-        </li>
-        <li>Other example projects:</li>
-        <li>
-            <ul>
-                <li><a href="./mode7.html">Mode7 (like SNES, sort of)</a></li>
-                <li><a href="./linesintersection.html">Lines intersection</a></li>
-            </ul>
-        </li>
-    </ul>
-    
-</body>
+
+    <!-- ── Nav ───────────────────────────────────────────── -->
+    <nav>
+        <a class="nav-logo" href="#"><span class="s">⚡</span> spark<span class="s">.js</span></a>
+        <ul class="nav-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#examples">Examples</a></li>
+            <li><a href="#quickstart">Quick Start</a></li>
+            <li><a href="docs/">Docs</a></li>
+            <li><a href="https://github.com/maxi-jp/HTML5_Engine" target="_blank" rel="noopener">GitHub</a></li>
+        </ul>
+    </nav>
+
+    <!-- ── Hero ──────────────────────────────────────────── -->
+    <div class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">⚡ HTML5 Game Engine</div>
+            <h1><span class="s">spark</span>.js</h1>
+            <p class="hero-tagline">
+                A lightweight, playful HTML5 game engine.<br>
+                No build tools. No npm. No bundler. Just JavaScript.
+            </p>
+            <div class="hero-pills">
+                <span class="pill">Canvas 2D</span>
+                <span class="pill">WebGL</span>
+                <span class="pill">Box2D Physics</span>
+                <span class="pill">Gamepad + Rumble</span>
+                <span class="pill">Web Audio</span>
+                <span class="pill">Particle System</span>
+                <span class="pill">HTML / CSS UI</span>
+                <span class="pill">Zero Dependencies*</span>
+            </div>
+            <div class="hero-actions">
+                <a class="btn btn-primary" href="#quickstart">Get Started</a>
+                <a class="btn btn-secondary" href="#examples">Browse Examples</a>
+                <a class="btn btn-secondary" href="docs/">Documentation</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Features ──────────────────────────────────────── -->
+    <div class="section-wrap" id="features">
+        <div class="section-label">What's inside</div>
+        <h2 class="section-title">Everything you need to ship a browser game</h2>
+        <p class="section-desc">A focused set of systems covering the full game-dev loop — rendering, input, audio, physics — without pulling in the whole internet.</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="feature-icon">🎨</span>
+                <div class="feature-title">2D &amp; WebGL Rendering</div>
+                <div class="feature-desc">Primitives, sprites, sprite sheets, and frame animations through a renderer abstraction that supports both Canvas 2D and WebGL backends.</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🔄</span>
+                <div class="feature-title">Game Loop</div>
+                <div class="feature-desc">Fixed-update / variable-draw main loop. Extend <code>Game</code>, implement <code>Start()</code>, <code>Update(deltaTime)</code>, <code>Draw()</code> — and go.</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🎮</span>
+                <div class="feature-title">Unified Input</div>
+                <div class="feature-desc">One API for keyboard, mouse, and gamepad with abstract Actions &amp; Axes mapping. Full rumble / haptic feedback support.</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🔊</span>
+                <div class="feature-title">Audio Manager</div>
+                <div class="feature-desc">Thin Web Audio wrapper for loading, playing, and managing sound effects and music, with optional analyser visualisation.</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🖥️</span>
+                <div class="feature-title">HTML / CSS UI</div>
+                <div class="feature-desc">Build menus and HUDs with real HTML elements via the <code>HTMLMenu</code> system — no proprietary widget toolkit.</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">⚛️</span>
+                <div class="feature-title">Box2D Physics</div>
+                <div class="feature-desc">Optional Box2D integration with ready-made <code>GameObject</code> subclasses for physics bodies, sprites, and animated objects.</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">✨</span>
+                <div class="feature-title">Particle System</div>
+                <div class="feature-desc">Configurable emitter with per-particle control over velocity, direction, opacity, scale, and rotation. Smoke, rain, fire — anything.</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🏊</span>
+                <div class="feature-title">Object Pooling</div>
+                <div class="feature-desc">Built-in recycling pool for bullets, particles, and any high-frequency object — no GC spikes mid-game.</div>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">🛠️</span>
+                <div class="feature-title">Math &amp; Utilities</div>
+                <div class="feature-desc">Vector math, collision helpers, color utilities, camera, parallax layers, tilemap, Mode 7 pseudo-3D, debug overlay, and more.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Examples ──────────────────────────────────────── -->
+    <div class="section-wrap" id="examples">
+        <div class="section-label">See it in action</div>
+        <h2 class="section-title">Demos &amp; Example Games</h2>
+        <p class="section-desc">Every demo runs live in your browser. All source code is in the repo.</p>
+
+        <div class="eg-label">🕹️ Games</div>
+        <div class="examples-grid">
+            <a class="ec" href="./brokeout.html"><span class="ci">🧱</span>BrokeOut</a>
+            <a class="ec" href="./floppyderp.html"><span class="ci">🐟</span>Floppy Derp</a>
+            <a class="ec" href="./twin-stick-shooter.html"><span class="ci">🎯</span>Twin Stick Shooter</a>
+            <a class="ec" href="./tts-complex.html"><span class="ci">🎯</span>Twin Stick Shooter 2</a>
+            <a class="ec" href="./tetrisbasic.html"><span class="ci">🟦</span>Basic Tetris</a>
+            <a class="ec" href="./tetriscomplex.html"><span class="ci">🟦</span>Complex Tetris</a>
+            <a class="ec" href="./snake.html"><span class="ci">🐍</span>Snake</a>
+            <a class="ec" href="./columns.html"><span class="ci">💎</span>Columns</a>
+            <a class="ec" href="./puzzlebobble.html"><span class="ci">🫧</span>Puzzle Bobble</a>
+            <a class="ec" href="./pacmon.html"><span class="ci">👾</span>Pacmon<span class="wip">WIP</span></a>
+            <a class="ec" href="./superpang.html"><span class="ci">💣</span>Super Pang<span class="wip">WIP</span></a>
+        </div>
+
+        <div class="eg-label">⚙️ Engine Systems</div>
+        <div class="examples-grid">
+            <a class="ec" href="./render_test.html"><span class="ci">🎨</span>Canvas 2D Renderer</a>
+            <a class="ec" href="./render_test.html?webgl"><span class="ci">🎨</span>WebGL Renderer</a>
+            <a class="ec" href="./particles.html"><span class="ci">✨</span>Particle System</a>
+            <a class="ec" href="./audiotest.html"><span class="ci">🔊</span>Audio System</a>
+            <a class="ec" href="./colliders.html"><span class="ci">🔵</span>Colliders</a>
+            <a class="ec" href="./object_pooling.html"><span class="ci">🏊</span>Object Pooling</a>
+            <a class="ec" href="./canvas-resize.html"><span class="ci">📐</span>Canvas Resizing</a>
+            <a class="ec" href="./parallax.html"><span class="ci">🌅</span>Parallax<span class="wip">WIP</span></a>
+            <a class="ec" href="./tileset.html"><span class="ci">🗺️</span>Tileset<span class="wip">WIP</span></a>
+            <a class="ec" href="./mode7.html"><span class="ci">🏎️</span>Mode 7</a>
+            <a class="ec" href="./linesintersection.html"><span class="ci">📐</span>Line Intersection</a>
+        </div>
+
+        <div class="eg-label">🎮 Input &amp; Gamepad</div>
+        <div class="examples-grid">
+            <a class="ec" href="./inputtest.html"><span class="ci">⌨️</span>Basic Input</a>
+            <a class="ec" href="./input_actions_test.html"><span class="ci">⌨️</span>Actions &amp; Axes</a>
+            <a class="ec ext" href="https://maxi-jp.github.io/Super-Gamepad-Tester/" target="_blank" rel="noopener"><span class="ci">🎮</span>Gamepad Tester</a>
+            <a class="ec ext" href="https://maxi-jp.github.io/Super-GamepadRumble-Tester/" target="_blank" rel="noopener"><span class="ci">📳</span>Rumble Tester</a>
+        </div>
+
+        <div class="eg-label">🖥️ UI &amp; Physics</div>
+        <div class="examples-grid">
+            <a class="ec" href="./menu.html"><span class="ci">📋</span>HTML Menu</a>
+            <a class="ec" href="./menu-and-ui.html"><span class="ci">📋</span>Menu + Game UI</a>
+            <a class="ec" href="./box2d-basic.html"><span class="ci">⚛️</span>Box2D Basic</a>
+            <a class="ec" href="./box2d-basket.html"><span class="ci">🏀</span>Box2D Basket</a>
+            <a class="ec" href="./box2d-platformer.html"><span class="ci">🦘</span>Box2D Platformer<span class="wip">WIP</span></a>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Quick Start ────────────────────────────────────── -->
+    <div class="section-wrap" id="quickstart">
+        <div class="section-label">Get started</div>
+        <h2 class="section-title">Running in 5 minutes</h2>
+        <p class="section-desc">No CLI. No config files. No package.json. Copy files, open a browser, make a game.</p>
+        <div class="qs-grid">
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div>
+                        <div class="step-title">Clone or download</div>
+                        <div class="step-body">Copy the <code>src/engine/</code> folder into your project.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div>
+                        <div class="step-title">Create your HTML</div>
+                        <div class="step-body">Add <code>&lt;canvas id="myCanvas"&gt;</code> and include the engine scripts in order.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div>
+                        <div class="step-title">Extend Game</div>
+                        <div class="step-body">Create a class extending <code>Game</code> and implement <code>Start()</code>, <code>Update(deltaTime)</code>, and <code>Draw()</code>.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div>
+                        <div class="step-title">Call Init()</div>
+                        <div class="step-body">Pass your class to <code>Init(MyGame)</code> inside <code>window.onload</code> and the engine loop starts.</div>
+                    </div>
+                </div>
+            </div>
+            <pre><span class="cm">// my-game.js</span>
+<span class="kw">class</span> <span class="cl">MyGame</span> <span class="kw">extends</span> <span class="cl">Game</span> {
+    <span class="fn">constructor</span>(renderer) {
+        <span class="kw">super</span>(renderer);
+        <span class="kw">this</span>.<span class="fn">Configure</span>({
+            screenWidth:  <span class="nm">640</span>,
+            screenHeight: <span class="nm">480</span>,
+        });
+    }
+
+    <span class="fn">Start</span>() {
+        <span class="kw">super</span>.<span class="fn">Start</span>();
+        <span class="cm">// load game objects, register input…</span>
+    }
+
+    <span class="fn">Update</span>(deltaTime) {
+        <span class="kw">super</span>.<span class="fn">Update</span>(deltaTime);
+        <span class="cm">// move, check collisions…</span>
+    }
+
+    <span class="fn">Draw</span>() {
+        <span class="kw">this</span>.renderer.<span class="fn">DrawFillRectangle</span>(
+            <span class="nm">0</span>, <span class="nm">0</span>,
+            <span class="kw">this</span>.screenWidth,
+            <span class="kw">this</span>.screenHeight,
+            Color.black
+        );
+        <span class="kw">super</span>.<span class="fn">Draw</span>();
+    }
+}
+
+window.onload = () =&gt; <span class="fn">Init</span>(<span class="cl">MyGame</span>);</pre>
+        </div>
+    </div>
+
+    <!-- ── Footer ─────────────────────────────────────────── -->
+    <div class="footer-wrap">
+        <p>
+            <strong style="color:var(--text)">spark.js</strong> (HTML5_Engine) &mdash;
+            built by <a href="https://github.com/maxi-jp" target="_blank" rel="noopener">maxi-jp</a> &mdash;
+            <a href="https://github.com/maxi-jp/HTML5_Engine" target="_blank" rel="noopener">GitHub</a> &mdash;
+            <a href="docs/">Documentation</a>
+        </p>
+        <p style="margin-top:0.5rem;font-size:0.75rem">* Box2D.js is an optional third-party dependency used only for physics features.</p>
+    </div>
+
+    </body>
 </html>

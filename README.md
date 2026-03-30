@@ -1,8 +1,8 @@
-# HTML5_Engine
+# spark.js - HTML5 Game Engine
 
 A modular, object-oriented HTML5 game engine for web browsers, built with vanilla JavaScript and the HTML5 Canvas API. Originally created for a university course on web game development.
 
-Engine and examples presents on this project are active on github pages: https://maxi-jp.github.io/HTML5_Engine/
+Engine's landing page, examples and documentation presents on this project are active on github pages: https://maxi-jp.github.io/HTML5_Engine/
 
 Documentation can be consulted [here](https://maxi-jp.github.io/HTML5_Engine/docs/).
 
@@ -55,7 +55,8 @@ Documentation can be consulted [here](https://maxi-jp.github.io/HTML5_Engine/doc
   - tetris/               # Tetris implementations
     - simple_tetris.js    # Basic Tetris game
     - tetris.js           # Complex Tetris with modern features
-  - tts/                  # Twin-stick shooter examples
+  - tts/                  # Twin-stick shooter advanced implementation
+  - tts_basic/            # Basic Twin-stick shooter game
   - canvas_resizing.js    # Canvas fullscreen and display configuration demo
   - coliders_test.js      # Collision detection testing
   - columns.js            # Columns-style puzzle game
@@ -126,11 +127,18 @@ Documentation can be consulted [here](https://maxi-jp.github.io/HTML5_Engine/doc
 class MyGame extends Game {
     constructor(renderer) {
         super(renderer);
+
+        // You can set the screen size (canvas width and height) here
+        this.Configure({
+            screenWidth: 640,
+            screenHeight: 480
+        });
+
         // Declare game objects
     }
 
     Start() {
-        // Set the screen size (canvas width and height)
+        // Yo can also set the screen size dynamically like this:
         this.screenWidth = 640;
         this.screenHeight = 480;
 
@@ -277,14 +285,14 @@ class MyGame extends Game {
     constructor(renderer) {
         super(renderer);
         
-        this.config = {
+        this.Configure({
             screenWidth: 640,              // Game resolution
             screenHeight: 480,
             fillWindow: true,              // Fill entire browser window
             preserveAspectRatio: true,     // Maintain aspect ratio
             matchNativeResolution: false,  // Use window size as resolution
             useDevicePixelRatio: false     // Handle high-DPI displays
-        };
+        });
     }
 }
 ```
@@ -303,9 +311,9 @@ MIT License
 - [x] ~~Create an action system for the input (i.e. `Input.Action("move_left")` instead of `Input.IsKeyDown(KEY_LEFT) || Input.IsKeyDown(KEY_A) || Input.IsGamepadButtonDown(0, "DPAD_LEFT") || Input.IsGamepadButtonDown(0, "LS_LEFT")`).~~ ✅DONE
 - [ ] Improve the webgl renderer (draw batching).
 - [ ] Implement other physic engines.
-- [ ] Create a documentation page/wiki.
+- [x] Create a documentation page/wiki. ✅DONE (see [the documentation page](https://maxi-jp.github.io/HTML5_Engine/docs/).)
 - [ ] Multiplayer with nodejs.
-- [ ] Think on a great name for the engine (like **`wat.js`** or something like that).
+- [x] ~~Think on a great name for the engine (like **`wat.js`** or something like that).~~ ✅DONE (engine renamed as "spark.js"!!! ✨)
 
 ## Contributing
 
