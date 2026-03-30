@@ -707,8 +707,11 @@ class Canvas2DRenderer extends Renderer {
 
     ApplyCameraTransform(camera) {
         this.ctx.save();
-        this.ctx.translate(-camera.x, -camera.y);
-        // TODO: handle rotation and scale
+
+        this.ctx.translate(this._halfWidth, this._halfHeight);
+        this.ctx.scale(camera.scale, camera.scale);
+        this.ctx.rotate(camera.rotation);
+        this.ctx.translate(-camera.x - this._halfWidth, -camera.y - this._halfHeight);
     }
 
     RestoreCameraTransform() {
@@ -1216,36 +1219,41 @@ class WebGLRenderer extends Renderer {
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
 
+    _applyViewMatrix() {
+        this.gl.useProgram(this.basicRectShader.program);
+        this.gl.uniformMatrix3fv(this.basicRectShader.viewMatrixLoc, false, this.viewMatrix);
+        this.gl.useProgram(this.spriteShader.program);
+        this.gl.uniformMatrix3fv(this.spriteShader.viewMatrixLoc, false, this.viewMatrix);
+        this.gl.useProgram(this.gradientRectShader.program);
+        this.gl.uniformMatrix3fv(this.gradientRectShader.viewMatrixLoc, false, this.viewMatrix);
+    }
+
     ApplyCameraTransform(camera) {
-        if (-camera.x !== this.viewMatrix[6] || -camera.y !== this.viewMatrix[7]) {
-            this.viewMatrix[6] = -camera.x;
-            this.viewMatrix[7] = -camera.y;
-            // TODO apply rotation and scale
+        const cx   = this._halfWidth;
+        const cy   = this._halfHeight;
+        const cos  = Math.cos(camera.rotation) * camera.scale;
+        const sin  = Math.sin(camera.rotation) * camera.scale;
+        const camX = camera.x + cx;
+        const camY = camera.y + cy;
 
-            this.gl.useProgram(this.basicRectShader.program);
-            this.gl.uniformMatrix3fv(this.basicRectShader.viewMatrixLoc, false, this.viewMatrix);
+        this.viewMatrix[0] =  cos;
+        this.viewMatrix[1] =  sin;
+        this.viewMatrix[2] =  0;
+        this.viewMatrix[3] = -sin;
+        this.viewMatrix[4] =  cos;
+        this.viewMatrix[5] =  0;
+        this.viewMatrix[6] = cx - cos * camX + sin * camY;
+        this.viewMatrix[7] = cy - sin * camX - cos * camY;
+        this.viewMatrix[8] =  1;
 
-            this.gl.useProgram(this.spriteShader.program);
-            this.gl.uniformMatrix3fv(this.spriteShader.viewMatrixLoc, false, this.viewMatrix);
-
-            this.gl.useProgram(this.gradientRectShader.program);
-            this.gl.uniformMatrix3fv(this.gradientRectShader.viewMatrixLoc, false, this.viewMatrix);
-        }
+        this._applyViewMatrix();
     }
 
     RestoreCameraTransform() {
-        if (this.viewMatrix[6] !== 0 || this.viewMatrix[7] !== 0) {
-            this.viewMatrix[6] = this.viewMatrix[7] = 0;
-
-            this.gl.useProgram(this.basicRectShader.program);
-            this.gl.uniformMatrix3fv(this.basicRectShader.viewMatrixLoc, false, this.viewMatrix);
-
-            this.gl.useProgram(this.spriteShader.program);
-            this.gl.uniformMatrix3fv(this.spriteShader.viewMatrixLoc, false, this.viewMatrix);
-
-            this.gl.useProgram(this.gradientRectShader.program);
-            this.gl.uniformMatrix3fv(this.gradientRectShader.viewMatrixLoc, false, this.viewMatrix);
-        }
+        this.viewMatrix[0] = 1; this.viewMatrix[1] = 0; this.viewMatrix[2] = 0;
+        this.viewMatrix[3] = 0; this.viewMatrix[4] = 1; this.viewMatrix[5] = 0;
+        this.viewMatrix[6] = 0; this.viewMatrix[7] = 0; this.viewMatrix[8] = 1;
+        this._applyViewMatrix();
     }
 }
 
@@ -1665,6 +1673,9 @@ class GradientRectShader {
 
     Use(gl) {
         gl.useProgram(this.program);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+        gl.vertexAttribPointer(this.positionLoc, 2, gl.FLOAT, false, 0, 0);
     }
 }
 

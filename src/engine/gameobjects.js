@@ -469,6 +469,12 @@ class Camera {
     _rotation = 0;
     _scale = 1;
 
+    // zoom
+    _zoomTarget   = 1;
+    _zoomFrom     = 1;
+    _zoomTime     = 0;
+    _zoomDuration = 1;
+
     constructor(position) {
         this._position = Vector2.Copy(position);
         this.lastState = { x: 0, y: 0, r: 0, s: 1 };
@@ -507,11 +513,49 @@ class Camera {
     }
 
     Start() {}
+
     Update(deltaTime) {
-        // this.lastState.x = this.position.x;
-        // this.lastState.y = this.position.y;
-        // this.lastState.r = this.rotation;
-        // this.lastState.s = this.scale;
+        if (this._zoomTime > 0) {
+            this._zoomTime -= deltaTime;
+            const t    = 1 - Math.max(0, this._zoomTime) / this._zoomDuration;
+            const ease = t * t * (3 - 2 * t); // smoothstep
+            this._scale = this._zoomFrom + (this._zoomTarget - this._zoomFrom) * ease;
+            if (this._zoomTime <= 0) {
+                this._scale   = this._zoomTarget;
+                this._zoomTime = 0;
+            }
+        }
+    }
+
+    /**
+     * Smoothly animates the camera zoom to a target scale.
+     * @param {number} targetScale  Destination scale (1 = normal, >1 zoom in, <1 zoom out).
+     * @param {number} [duration=0] Transition time in seconds. 0 = instant.
+     */
+    Zoom(targetScale, duration = 0) {
+        if (duration <= 0) {
+            this._scale      = targetScale;
+            this._zoomTarget = targetScale;
+            this._zoomTime   = 0;
+            return;
+        }
+        this._zoomFrom     = this._scale;
+        this._zoomTarget   = targetScale;
+        this._zoomDuration = duration;
+        this._zoomTime     = duration;
+    }
+
+    /**
+     * Instantly jumps to a scale then smoothly returns to 1. Great for impact feedback.
+     * @param {number} punchScale   Scale applied immediately (e.g. 1.08 or 0.92).
+     * @param {number} [returnDuration=0.3] Time in seconds to ease back to scale 1.
+     */
+    ZoomPunch(punchScale, returnDuration = 0.3) {
+        this._scale        = punchScale;
+        this._zoomFrom     = punchScale;
+        this._zoomTarget   = 1.0;
+        this._zoomDuration = returnDuration;
+        this._zoomTime     = returnDuration;
     }
 
     PreDraw(renderer) {
@@ -603,6 +647,8 @@ class FollowCamera extends Camera {
         // TODO apply offset
         this.position.x += ((this.targetPosition.x - this.position.x) * smoothStep) + this.shakingValue.x;
         this.position.y += ((this.targetPosition.y - this.position.y) * smoothStep) + this.shakingValue.y;
+
+        super.Update(deltaTime); // handles zoom animation
     }
 
     Shake(time, speed, size) {
