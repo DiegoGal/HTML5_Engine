@@ -16,14 +16,7 @@ class Enemy extends SpriteObject {
         this.boundingRadious2 = this.boundingRadious * this.boundingRadious;
     }
 
-    Start() {
-        this.collider = new CircleCollider(Vector2.Zero(), this.boundingRadious, this);
-        game.AddCollider(this.collider);
-    }
-
     Update(deltaTime) {
-        super.Update(deltaTime); // updates collider position
-
         // always face the player
         this.rotation = Math.atan2(
             this.player.position.y - this.position.y,
@@ -48,17 +41,6 @@ class Enemy extends SpriteObject {
             return true;
         }
         return false;
-    }
-
-    OnCollisionEnter(myCollider, otherCollider) {
-        if (!(otherCollider.go instanceof Bullet)) return;
-
-        const bullet = otherCollider.go;
-        bullet.active = false;
-
-        if (this.Damage(bullet.damage)) {
-            game.EnemyKilled(this);
-        }
     }
 }
 
@@ -85,8 +67,6 @@ class EnemyKamikaze extends Enemy {
     }
 
     Update(deltaTime) {
-        super.Update(deltaTime);
-
         this.thrustFireSprite.rotation = this.rotation;
         const firePosition = RotatePointAroundPoint({x: this.position.x + this.thrustFirePosition.x, y: this.position.y + this.thrustFirePosition.y}, this.position, this.rotation - PIH);
         this.thrustFireSprite.position.Set(firePosition.x, firePosition.y);
@@ -171,8 +151,6 @@ class EnemyAsteroid extends Enemy {
     }
 
     Update(deltaTime) {
-        super.Update(deltaTime);
-
         this.rotation += this.rotationSpeed * deltaTime;
 
         // move forwards

@@ -31,9 +31,36 @@ class TTSCPlayer extends SpriteObject {
     Start() {
         this.camera = game.camera;
         this.life = 100;
+
+        this.collider = new CircleCollider(Vector2.Zero(), this.boundingRadious, this);
+        game.AddCollider(this.collider);
+
+        // Player's input configuration --------------------
+        // Shot action
+        Input.RegisterAction("Shot", [
+            { type: 'key', code: KEY_SPACE },
+            { type: 'mouse' },
+            { type: 'gamepad', code: 'RT' }
+        ]);
+        // Horizontal axis
+        Input.RegisterAxis("MoveHorizontal", [
+            { type: 'key', positive: KEY_D, negative: KEY_A },
+            { type: 'key', positive: KEY_RIGHT, negative: KEY_LEFT },
+            { type: 'gamepadaxis', stick: 'LS', axis: 0 },
+            { type: 'gamepadbutton', positive: 'DPAD_RIGHT', negative: 'DPAD_LEFT' }
+        ]);
+        // Vertical axis
+        Input.RegisterAxis("MoveVertical", [
+            { type: 'key', positive: KEY_S, negative: KEY_W },
+            { type: 'key', positive: KEY_DOWN, negative: KEY_UP },
+            { type: 'gamepadaxis', stick: 'LS', axis: 1 },
+            { type: 'gamepadbutton', positive: 'DPAD_DOWN', negative: 'DPAD_UP' }
+        ]);
     }
 
     Update(deltaTime) {
+        super.Update(deltaTime); // updates collider position
+
         const gamepad = Input.gamepads.length > 0;
 
         // rotation
@@ -54,28 +81,8 @@ class TTSCPlayer extends SpriteObject {
         }
 
         // movement
-        this.movement.Set(0, 0);
-
-        if (gamepad) {
-            const leftStickValue = Input.GetGamepadStickValue(0, "LS");
-            this.movement.x = leftStickValue.x;
-            this.movement.y = leftStickValue.y;
-        }
-
-        if (Input.IsKeyPressed(KEY_A)) {
-            this.movement.x -= 1;
-        }
-        if (Input.IsKeyPressed(KEY_D)) {
-            this.movement.x += 1;
-        }
-        if (Input.IsKeyPressed(KEY_W)) {
-            this.movement.y -= 1;
-        }
-        if (Input.IsKeyPressed(KEY_S)) {
-            this.movement.y += 1;
-        }
-        
-        if (!gamepad)
+        this.movement.Set(Input.GetAxis("MoveHorizontal"), Input.GetAxis("MoveVertical"));
+        if (this.movement.Length() > 1)
             this.movement.Normalize();
 
         // speed multiply
@@ -90,9 +97,7 @@ class TTSCPlayer extends SpriteObject {
         // shooting!
         this.fireRateAux -= deltaTime;
 
-        if (this.fireRateAux <= 0 && (
-            Input.IsKeyPressed(KEY_SPACE) || Input.IsMousePressed() || Input.IsGamepadButtonPressed(0, "FACE_DOWN") || Input.IsGamepadButtonPressed(0, "RT")
-        )) {
+        if (this.fireRateAux <= 0 && Input.GetAction("Shot")) {
             const bullet = this.bulletPool.Activate();
             if (bullet) {
                 // TODO play shoot audio
@@ -108,7 +113,7 @@ class TTSCPlayer extends SpriteObject {
 
                 this.fireRateAux = this.fireRate;
 
-                // game.camera.Shake(0.1, 100, 1);
+                // game.camera.Shake(0.08, 120, 1.5);
             }
         }
 
@@ -148,6 +153,25 @@ class TTSCPlayer extends SpriteObject {
 
         // draw the bullets
         this.bulletPool.Draw(renderer);
+    }
+
+    Damage(damage) {
+        this.life -= damage;
+        if (this.life <= 0) {
+            this.life = 0;
+            return true;
+        }
+        return false;
+    }
+
+    OnCollisionEnter(myCollider, otherCollider) {
+        if (!(otherCollider.go instanceof Enemy))
+            return;
+
+        const enemy = otherCollider.go;
+        this.Damage(enemy.collisionDamage);
+
+        game.EnemyCollidesWithPlayer(enemy);
     }
 }
 

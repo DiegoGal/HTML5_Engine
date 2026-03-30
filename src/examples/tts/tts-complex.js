@@ -1,13 +1,19 @@
+const GAME_STATE = {
+    MAIN_MENU: 0,
+    INTRO: 1,
+    GAME: 2,
+    GAME_OVER: 3
+}
+
 class TTSC extends Game {
     constructor(renderer) {
         super(renderer);
 
-        this.config = {
-            ...this.config,
+        this.Configure({
             screenWidth: 1280,
             screenHeight: 720,
             fillWindow: true
-        };
+        });
 
         this.graphicAssets = {
             ships: {
@@ -19,6 +25,8 @@ class TTSC extends Game {
                 img: null
             }
         };
+
+        this.state = GAME_STATE.MAIN_MENU;
 
         // background gradient
         this.bgGrad = null;
@@ -50,6 +58,12 @@ class TTSC extends Game {
     Start() {
         super.Start();
 
+        this.state = GAME_STATE.INTRO;
+
+        // Gamepad rumble
+        Input.RegisterRumble("Damage", 0.4, 0.2, 150, 0);
+        Input.RegisterRumble("EnemyKilled", 0, 0.25, 100, 0);
+
         // configure background gradient
         this.bgGrad = new LinearGradient(this.renderer, new Vector2(0, 1), [
             [0, "#191200"],
@@ -66,67 +80,59 @@ class TTSC extends Game {
 
         this.camera = new FollowCamera(Vector2.Zero(), this.player, -200, 140, -100, 40, 5);
         this.camera.Start();
+        
+        if (this.state === GAME_STATE.INTRO) {
+            this.camera.scale = 10;
+            this.player.active = false;
+        }
+
         this.player.Start();
 
         // initialize the starting enemies
         this.enemies = [];
-        const enemy = new EnemyAsteroid(new Vector2(50, 50), this.graphicAssets.ships.img, this.player, this.sceneLimits, new Vector2(2, 1), false);
-        this.AddEnemy(enemy);
     }
 
     Update(deltaTime) {
         // update the game objects
         super.Update(deltaTime);
 
+        switch (this.state) {
+            case GAME_STATE.MAIN_MENU:
+                
+                break;
+            case GAME_STATE.INTRO:
+                this._updateIntro(deltaTime);
+                break;
+            case GAME_STATE.GAME:
+                this._updateGame(deltaTime);
+                break;
+            case GAME_STATE.GAME_OVER:
+                
+                break;
+        }
         // update the camera
         this.camera.Update(deltaTime);
+    }
 
+    _updateIntro(deltaTime) {
+        
+        if (this.camera.scale <= 1) {
+            this.camera.scale = 1;
+            this.camera.rotation += 5 * deltaTime;
+            if ((this.camera.rotation % PI2) <= 0.1) {
+                this.camera.rotation = 0;
+                this.state = GAME_STATE.GAME;
+                this.player.active = true;
+            }
+        }
+        else {
+            this.camera.scale -= 10 * deltaTime;
+            this.camera.rotation += 4 * deltaTime;
+        }
+    }
+
+    _updateGame(deltaTime) {
         this.mouseCircle.position.Set(Input.mouse.x, Input.mouse.y);
-
-        // check bullets-enemies collisions
-        // TODO! update collisions to use the ingame collisions system
-        const bullets = this.player.bulletPool.objects;
-        for (let i = 0; i < bullets.length; i++) {
-            const bullet = bullets[i];
-            if (bullet.active) {
-                for (let j = 0; j < this.enemies.length; j++) {
-                    // check bullets[i] - enemies[j] collision
-                    const collision = CheckPointInsideCircle(bullet.position.x, bullet.position.y, this.enemies[j].position, this.enemies[j].boundingRadious2);
-
-                    if (collision) {
-                        if (this.enemies[j].Damage(bullet.damage)) {
-                            this.playerScore += this.enemies[j].score;
-                            this.playerScoreLabel.text = this.playerScore;
-
-                            this.RemoveEnemy(this.enemies[j], j);
-
-                            bullet.active = false;
-
-                            this.camera.Shake(0.2, 100, 2);
-
-                            break; // exit the bullets loop
-                        }
-                    }
-                }
-            }
-        }
-
-        // check player enemies collisions
-        // TODO! update collisions to use the ingame collisions system
-        for (let i = 0; i < this.enemies.length; i++) {
-            const difX = this.enemies[i].position.x - this.player.position.x;
-            const difY = this.enemies[i].position.y - this.player.position.y;
-            let pointToCircleDistance2 = difX * difX + difY * difY;
-
-            if(pointToCircleDistance2 < this.enemies[i].boundingRadious2 + this.player.boundingRadious2) {
-                this.playerScore -= this.enemies[i].score;
-                this.playerScoreLabel.text = this.playerScore;
-                this.RemoveEnemy(this.enemies[i], i);
-
-                this.camera.Shake(0.3, 100, 4);
-            }
-
-        }
 
         // enemy spawning
         this.timeToSpawnEnemyAux += deltaTime;
@@ -174,17 +180,7 @@ class TTSC extends Game {
     AddEnemy(enemy) {
         this.enemies.push(enemy);
         this.gameObjects.push(enemy);
-    }
-
-    RemoveEnemy(enemy, index) {
-        if (index === undefined) {
-            this.enemies.splice(this.enemies.indexOf(enemy), 1);
-            this.gameObjects.splice(this.gameObjects.indexOf(enemy), 1);
-        }
-        else {
-            this.gameObjects.splice(this.gameObjects.indexOf(this.enemies[index]), 1);
-            this.enemies.splice(index, 1);
-        }
+        enemy.Start();
     }
 
     SpawnRandomEnemy() {
@@ -206,6 +202,36 @@ class TTSC extends Game {
             this.timeToSpawnEnemy = 0.15
 
         this.AddEnemy(enemy);
+    }
+
+    EnemyKilled(enemy) {
+        this.playerScore += enemy.score;
+        this.playerScoreLabel.text = this.playerScore;
+
+        this.camera.Shake(0.2, 200, 1.5);
+        // this.camera.ZoomPunch(1.06, 0.2);
+        Input.ExecuteRumble("EnemyKilled");
+
+        this.RemoveEnemy(enemy);
+    }
+
+    RemoveEnemy(enemy) {
+        const enemyIndex = this.enemies.indexOf(enemy);
+        if (enemyIndex !== -1)
+            this.enemies.splice(enemyIndex, 1);
+        this.Destroy(enemy);
+    }
+
+    EnemyCollidesWithPlayer(enemy) {
+        this.playerScore -= enemy.score;
+        this.playerScoreLabel.text = this.playerScore;
+
+        Input.ExecuteRumble("Damage");
+
+        this.camera.Shake(0.3, 200, 4);
+        this.camera.ZoomPunch(0.95, 0.45);
+
+        this.RemoveEnemy(enemy);
     }
 }
 
