@@ -216,9 +216,9 @@ Start() {
 
 Use `SSAnimationObjectBasic` when every frame in your sprite sheet is the **same size** and the animations are laid out in a **regular grid** (rows = animations, columns = frames). This is the simplest and most common sprite-sheet format.
 
-This is exactly how the player character is implemented in the [Flappy Derp example](https://maxi-jp.github.io/HTML5_Engine/floppyderp.html) — two 10-frame animations (flying and dying) on a 24 × 24 grid:
+This is exactly how the player character is implemented in the [Flappy Derp example](https://maxi-jp.github.io/spark.js/floppyderp.html) — two 10-frame animations (flying and dying) on a 24 × 24 grid:
 
-![Floppy Derp player sprite sheet](https://maxi-jp.github.io/HTML5_Engine/src/examples/floppyderp/assets/player_sprites.png)
+![Floppy Derp player sprite sheet](https://maxi-jp.github.io/spark.js/src/examples/floppyderp/assets/player_sprites.png)
 
 *Sprite sheet: 10 columns × 2 rows, each cell 24 × 24 px. Row 0 = flying animation, row 1 = death animation.*
 
@@ -266,7 +266,7 @@ Key points:
 - Call `PlayAnimationLoop(animationId)` to switch between rows.
 - `framesDuration` can be changed at any time to speed up or slow down the current animation.
 
-> Live demo: [Floppy Derp](https://maxi-jp.github.io/HTML5_Engine/floppyderp.html)
+> Live demo: [Floppy Derp](https://maxi-jp.github.io/spark.js/floppyderp.html)
 
 ---
 

@@ -230,7 +230,7 @@ class Player extends SpriteObject {
 }
 ```
 
-> **Real-world example:** the <a href="https://maxi-jp.github.io/HTML5_Engine/superpang.html" target="_blank">Super Pang</a> example uses both collider types together. `PangBall` has a `CircleCollider` and `PangShot` has a `RectangleCollider` whose size is updated every frame to match the wire's current length. Collision is detected on the ball side — `OnCollisionEnter` checks `otherCollider.go instanceof PangShot` and triggers the pop-and-split logic. The wire collider also demonstrates updating a collider's `position`, `rect`, and `boundingRadius` manually each frame for non-standard shapes.
+> **Real-world example:** the <a href="https://maxi-jp.github.io/spark.js/superpang.html" target="_blank">Super Pang</a> example uses both collider types together. `PangBall` has a `CircleCollider` and `PangShot` has a `RectangleCollider` whose size is updated every frame to match the wire's current length. Collision is detected on the ball side — `OnCollisionEnter` checks `otherCollider.go instanceof PangShot` and triggers the pop-and-split logic. The wire collider also demonstrates updating a collider's `position`, `rect`, and `boundingRadius` manually each frame for non-standard shapes.
 
 **2. Set a callback directly on the collider** (useful for standalone colliders):
 
@@ -273,7 +273,7 @@ this.Configure({ collidersOnly: true });
 
 Colliders are drawn in **red** when not colliding and switch to **green** when overlapping.
 
-> Live demo: [Colliders test](https://maxi-jp.github.io/HTML5_Engine/colliders.html)
+> Live demo: [Colliders test](https://maxi-jp.github.io/spark.js/colliders.html)
 
 ---
 
@@ -298,7 +298,7 @@ bullet.Launch(this.player.position, this.player.rotation);
 
 Objects in the pool are created with `active = false` upfront. Call `object.active = false` inside the object's own `Update` to return it to the pool (e.g. when it goes off-screen).
 
-> See the [Object Pooling demo](https://maxi-jp.github.io/HTML5_Engine/object_pooling.html) for a complete example.
+> See the [Object Pooling demo](https://maxi-jp.github.io/spark.js/object_pooling.html) for a complete example.
 
 ---
 

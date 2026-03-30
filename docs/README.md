@@ -2,7 +2,7 @@
 
 A modular, object-oriented HTML5 game engine for web browsers, built with vanilla JavaScript, WebGL and the HTML5 Canvas API. Originally created for a university course on web game development.
 
-Engine and examples are actively hosted on GitHub Pages: [https://maxi-jp.github.io/HTML5_Engine/](https://maxi-jp.github.io/HTML5_Engine/)
+Engine and examples are actively hosted on GitHub Pages: [https://maxi-jp.github.io/spark.js/](https://maxi-jp.github.io/spark.js/)
 
 ## Features
 

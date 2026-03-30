@@ -84,7 +84,7 @@ new HTMLMenu(game, menuContainerSelector, canvasContainerSelector, canvas, cover
 
 ### Example: a sliding main menu
 
-This is the pattern used in the [menu example](https://maxi-jp.github.io/HTML5_Engine/menu.html):
+This is the pattern used in the [menu example](https://maxi-jp.github.io/spark.js/menu.html):
 
 **JS — subclass `HTMLMenu`**
 
@@ -159,7 +159,7 @@ class MyGame extends Game {
 
 ### Example: an in-game UI panel
 
-This is the pattern used in the [menu-and-ui example](https://maxi-jp.github.io/HTML5_Engine/menu-and-ui.html) — an upgrade panel that can be toggled during gameplay:
+This is the pattern used in the [menu-and-ui example](https://maxi-jp.github.io/spark.js/menu-and-ui.html) — an upgrade panel that can be toggled during gameplay:
 
 ```javascript
 class UIMenu extends HTMLMenu {
@@ -245,6 +245,6 @@ new TextLabel(text, position, font, color, align, baseline, visible)
 
 ## Live demos
 
-- [HTML + CSS main menu](https://maxi-jp.github.io/HTML5_Engine/menu.html) — sliding menu with credits scroll
-- [HTML + CSS menu and in-game UI](https://maxi-jp.github.io/HTML5_Engine/menu-and-ui.html) — toggling upgrade panel with two-way data binding between HTML and canvas
-- [Rumble Test (HTML UI)](https://maxi-jp.github.io/HTML5_Engine/rumble-test-html.html) — HUD overlay built with `coverCanvas=true`; HTML controls float over the canvas while the canvas runs a pure animation layer underneath
+- [HTML + CSS main menu](https://maxi-jp.github.io/spark.js/menu.html) — sliding menu with credits scroll
+- [HTML + CSS menu and in-game UI](https://maxi-jp.github.io/spark.js/menu-and-ui.html) — toggling upgrade panel with two-way data binding between HTML and canvas
+- [Rumble Test (HTML UI)](https://maxi-jp.github.io/spark.js/rumble-test-html.html) — HUD overlay built with `coverCanvas=true`; HTML controls float over the canvas while the canvas runs a pure animation layer underneath

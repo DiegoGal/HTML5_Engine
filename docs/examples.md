@@ -14,7 +14,7 @@ Explore the `src/examples/` directory for practical demonstrations of the engine
 - [Input Actions test](../input_actions_test.html ':ignore :target=_blank') — abstract input system with Actions and Axes
 - [Gamepad Tester](../gamepad-tester.html ':ignore :target=_blank') — interactive gamepad visualiser; shows button presses, stick positions with trail history, and trigger values; background gradient updates dynamically to match the detected controller brand (Xbox, PlayStation's DualSense, Nintendo's Switch Pro Controller)
 - [Rumble Test](../rumble-test.html ':ignore :target=_blank') — demonstrates `Input.RumbleGamepad()`; four named presets (Tap, Impact, Engine, Buzz) mapped to face buttons and keyboard 1–4, plus a custom section where LT/RT control strong/weak motor intensity live
-- [Rumble Test (HTML UI)](../rumble-test-html.html ':ignore :target=_blank') — same rumble tester rebuilt with an `HTMLMenu` overlay (`coverCanvas=true`); all controls are HTML/CSS while the canvas runs a ring-burst animation in the background
+- [Rumble Test (HTML UI)](../rumble-test-html.html ':ignore :target=_blank') — same rumble tester rebuilt with an `HTMLMenu` overlay (`coverCanvas=true`); all controls are HTML/CSS while the canvas runs a ring-burst animation in the background. This example has a more [advance standalone version including a ring-burst animation in the background plus a real-time oscilloscope wave strip to the canvas](https://maxi-jp.github.io/Super-GamepadRumble-Tester/ ':ignore :target=_blank')
 
 ### Other systems
 - [Audio system test](../audiotest.html ':ignore :target=_blank')

@@ -121,7 +121,7 @@ Update(deltaTime) {
 }
 ```
 
-> See the [Twin-Stick Shooter demo](https://maxi-jp.github.io/HTML5_Engine/twin-stick-shooter.html) for a complete example combining keyboard movement and mouse aiming.
+> See the [Twin-Stick Shooter demo](https://maxi-jp.github.io/spark.js/twin-stick-shooter.html) for a complete example combining keyboard movement and mouse aiming.
 
 ### Direct Gamepad Access
 
@@ -197,7 +197,7 @@ Input.RumbleGamepad(0, 1,   0.3, 200,   0);   // main blast
 Input.RumbleGamepad(0, 0.2, 0.6, 400, 250);   // debris vibration after 250 ms
 ```
 
-> **Real-world example:** the <a href="https://maxi-jp.github.io/HTML5_Engine/rumble-test.html" target="_blank">Rumble Test</a> demonstrates four named presets (Tap, Impact, Engine, Buzz) and a live custom section where LT/RT control motor intensity before firing.
+> **Real-world example:** the <a href="https://maxi-jp.github.io/spark.js/rumble-test.html" target="_blank">Rumble Test</a> demonstrates four named presets (Tap, Impact, Engine, Buzz) and a live custom section where LT/RT control motor intensity before firing.
 
 ### Rumble presets
 
