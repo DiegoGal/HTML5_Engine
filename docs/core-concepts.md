@@ -114,6 +114,7 @@ Set `this.config` in the constructor. `super.Start()` reads it to configure the 
 | `analyzerSmoothing` | `number` | `0.5` | Smoothing time constant for the audio analyser |
 | `drawColliders` | `boolean` | `false` | Draw collision shapes on top of game visuals every frame (debug aid) |
 | `collidersOnly` | `boolean` | `false` | Skip all game object rendering and draw **only** collision shapes — useful for pure hitbox debugging |
+| `mobileSupport` | `boolean` | `false` | Controls touch/mobile setup. Touch support is activated **automatically** when the engine detects a touch-capable device (`navigator.maxTouchPoints > 0`), so you usually don't need to set this. Set to `true` to force it on non-touch devices (useful for testing on desktop). Set to `false` to suppress it even on touch devices (e.g. on hybrid laptops you want to treat as desktop-only). When active: sets `touch-action: none` on the canvas, `user-select: none` on `<body>`, injects a `<meta name="viewport">` tag if absent, and enables audio context resume on first touch. |
 
 Call `this.Configure(partialConfig)` in your Game's constructor to merge new values into an already-running config.
 

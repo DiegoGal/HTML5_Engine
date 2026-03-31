@@ -170,6 +170,20 @@ class CircleGO extends GameObject {
         this.circle = new Circle(this._position, radius, color, stroke=false, lineWidth=1)
     }
 
+    get color() {
+        return this.circle.color;
+    }
+    get radius() {
+        return this.circle.radius;
+    }
+
+    set color(value) {
+        this.circle.color = value;
+    }
+    set radius(value) {
+        this.circle.radius = value;
+    }
+
     Draw(renderer) {
         renderer.DrawCircle(this.position.x, this.position.y, this.circle.radius, this.circle.color, this.circle.stroke, this.circle.lineWidth);
     }

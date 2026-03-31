@@ -2,13 +2,13 @@ class ObjectPooling extends Game {
     constructor(renderer) {
         super(renderer);
 
-        this.config = {
+        this.Configure({
             screenWidth: 800,
             screenHeight: 800,
             fillWindow: true,
             matchNativeResolution: false,
             preserveAspectRatio: true
-        };
+        });
 
         this.activeObjectsLabel = null;
 

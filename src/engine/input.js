@@ -179,12 +179,47 @@ var Input = {
         moved: false
     },
 
+    /**
+     * Current touch state. The primary finger (first one down) is mirrored into
+     * `Input.mouse` so all existing mouse-based game code works on mobile unchanged.
+     * @type {{
+     *   any:     boolean,  // true every frame at least one finger is on the screen
+     *   count:   number,   // number of active touch points this frame
+     *   down:    boolean,  // true only on the frame the first finger touched down
+     *   up:      boolean,  // true only on the frame the last finger was lifted
+     *   touches: Map<number, {id:number, x:number, y:number}> // all active touch points
+     * }}
+     */
+    touch: {
+        any: false,
+        count: 0,
+        down: false,
+        up: false,
+        touches: new Map()
+    },
+
+    /**
+     * Current keyboard state. Updated every frame.
+     * @type {{
+     *   keydown: Object<number, boolean>,    // True on the single frame a key was first pressed
+     *   keyup: Object<number, boolean>,      // True on the single frame a key was released
+     *   keypressed: Object<number, boolean>, // True every frame a key is held down
+     *   anyKeyPressed: boolean               // True if any key is currently held
+     * }}
+     */
     keyboard: {
         keyup: {},
         keypressed: {},
         keydown: {},
         anyKeyPressed: false
     },
+
+    /**
+     * Array of connected gamepad descriptors. Each entry is created on `gamepadconnected`
+     * and holds `{ gamepad, down[], up[], pressed[], mapping }`. Index matches the browser
+     * Gamepad API index (usually 0 for the first controller).
+     * @type {Array<{gamepad: Gamepad, down: boolean[], up: boolean[], pressed: boolean[], mapping: object}>}
+     */
     gamepads: [
         // gamepad object structure:
         // {
@@ -196,13 +231,31 @@ var Input = {
         // }
     ],
 
-    // Abstract input mapping
+    /** @type {Object<string, Array>} Named action bindings registered with `RegisterAction`. */
     actionMaps: {},
+    /** @type {Object<string, Array>} Named axis bindings registered with `RegisterAxis`. */
     axisMaps: {},
+    /** @type {Object<string, {strong:number, weak:number, duration:number, delay:number}>} Named rumble presets registered with `RegisterRumble`. */
     rumbleMaps: {},
-    
-    // Canvas and coordinate transformation cache
+
+    /**
+     * Registered virtual on-screen controls, keyed by the id passed to
+     * `RegisterVirtualJoystick` / `RegisterVirtualButton`.
+     * @type {{joysticks: Map<string, VirtualJoystick>, buttons: Map<string, VirtualButton>}}
+     */
+    _virtualControls: {
+        joysticks: new Map(),
+        buttons:   new Map()
+    },
+    /** @type {Set<number>} Touch identifiers already claimed by a virtual control this frame. */
+    _claimedTouches: new Set(),
+
+    /** @type {HTMLCanvasElement|null} Canvas element used for coordinate normalisation. */
     _canvas: null,
+    /**
+     * Cached canvas-to-game-coordinate transform, updated by `UpdateCanvasTransform()`.
+     * @type {{offsetX:number, offsetY:number, scaleX:number, scaleY:number, canvasWidth:number, canvasHeight:number}}
+     */
     _canvasTransform: {
         offsetX: 0,
         offsetY: 0,
@@ -214,12 +267,24 @@ var Input = {
 
 // #region Setup Functions
 
+    /**
+     * Stores a reference to the canvas element and the logical game resolution used for
+     * mouse / touch coordinate normalisation. Called automatically by `SetupMouseEvents`.
+     * @param {HTMLCanvasElement} canvas
+     * @param {number} [canvasWidth]  - Logical game width in pixels (defaults to `canvas.width`).
+     * @param {number} [canvasHeight] - Logical game height in pixels (defaults to `canvas.height`).
+     */
     SetCanvas: function(canvas, canvasWidth, canvasHeight) {
         this._canvas = canvas;
         this._canvasTransform.canvasWidth = canvasWidth || canvas.width;
         this._canvasTransform.canvasHeight = canvasHeight || canvas.height;
     },
     
+    /**
+     * Refreshes the cached canvas bounding-rect and scale factors used to convert pixel
+     * positions to game coordinates. Called automatically when the canvas or resolution
+     * changes. You can call it manually after programmatic layout changes.
+     */
     UpdateCanvasTransform: function() {
         if (!this._canvas)
             return;
@@ -231,6 +296,12 @@ var Input = {
         this._canvasTransform.scaleY = this._canvasTransform.canvasHeight / rect.height;
     },
     
+    /**
+     * Updates the logical game resolution used for coordinate normalisation and refreshes
+     * the transform cache. Call this whenever the game's `screenWidth` / `screenHeight` changes.
+     * @param {number} width  - New logical canvas width in pixels.
+     * @param {number} height - New logical canvas height in pixels.
+     */
     SetCanvasResolution: function(width, height) {
         this._canvasTransform.canvasWidth = width;
         this._canvasTransform.canvasHeight = height;
@@ -238,6 +309,10 @@ var Input = {
         this.UpdateCanvasTransform();
     },
     
+    /**
+     * Registers `keydown` and `keyup` listeners on `document`.
+     * Called once during engine initialisation — you do not need to call this manually.
+     */
     SetupKeyboardEvents: function() {
         AddEvent(document, "keydown", function(e) {
             //console.log(e.keyCode);
@@ -262,6 +337,12 @@ var Input = {
         }
     },
 
+    /**
+     * Registers `mousedown`, `mousemove`, and `mouseup` listeners on the canvas and stores
+     * the canvas reference for coordinate normalisation.
+     * Called once during engine initialisation — you do not need to call this manually.
+     * @param {HTMLCanvasElement} canvas
+     */
     SetupMouseEvents: function(canvas) {
         // Set canvas reference for coordinate transformation
         this.SetCanvas(canvas);
@@ -274,6 +355,95 @@ var Input = {
         canvas.addEventListener("mouseup", MouseUp, false);
     },
 
+    /**
+     * Registers touch event listeners on the canvas.
+     * The primary finger (first one down) is automatically mirrored into `Input.mouse`
+     * so any game that already reads `Input.mouse` works on mobile with no changes.
+     * Multi-touch points are tracked in `Input.touch.touches` (Map keyed by identifier).
+     * Call this from `Game.Start()` when `mobileSupport` is enabled — `main.js` wires
+     * it up automatically when `config.mobileSupport = true`.
+     * @param {HTMLCanvasElement} canvas
+     */
+    SetupTouchEvents: function(canvas) {
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            for (const t of e.changedTouches) {
+                const pos = Input._touchToCanvas(t);
+                Input.touch.touches.set(t.identifier, { id: t.identifier, x: pos.x, y: pos.y });
+            }
+            Input.touch.count = Input.touch.touches.size;
+            Input.touch.any = true;
+
+            // Mirror the first finger down to mouse so mouse-based code works on mobile
+            if (e.touches.length === 1) {
+                const primary = Input.touch.touches.get(e.touches[0].identifier);
+                Input.mouse.x = primary.x;
+                Input.mouse.y = primary.y;
+                Input.mouse.down = true;
+                Input.mouse.pressed = true;
+                Input.touch.down = true;
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for (const t of e.changedTouches) {
+                const pos = Input._touchToCanvas(t);
+                const entry = Input.touch.touches.get(t.identifier);
+                if (entry) {
+                    entry.x = pos.x;
+                    entry.y = pos.y;
+                }
+            }
+            // Mirror primary touch movement to mouse
+            const primary = Input.touch.touches.get(e.touches[0]?.identifier);
+            if (primary) {
+                Input.mouse.x = primary.x;
+                Input.mouse.y = primary.y;
+                Input.mouse.moved = true;
+            }
+        }, { passive: false });
+
+        const onTouchEnd = (e) => {
+            e.preventDefault();
+            for (const t of e.changedTouches) {
+                Input.touch.touches.delete(t.identifier);
+            }
+            Input.touch.count = Input.touch.touches.size;
+            Input.touch.any = Input.touch.count > 0;
+
+            // When all fingers are lifted, mirror mouse up
+            if (Input.touch.count === 0) {
+                Input.mouse.up = true;
+                Input.mouse.pressed = false;
+                Input.touch.up = true;
+            }
+        };
+        canvas.addEventListener('touchend',    onTouchEnd, { passive: false });
+        canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
+    },
+
+    /**
+     * Converts a Touch point to internal canvas coordinates using the same
+     * normalized-coordinate approach as `MouseMove`.
+     * @param {Touch} touch
+     * @returns {{x: number, y: number}}
+     */
+    _touchToCanvas: function(touch) {
+        const rect = this._canvas.getBoundingClientRect();
+        const normalizedX = (touch.clientX - rect.left) / rect.width;
+        const normalizedY = (touch.clientY - rect.top)  / rect.height;
+        return {
+            x: normalizedX * this._canvasTransform.canvasWidth,
+            y: normalizedY * this._canvasTransform.canvasHeight
+        };
+    },
+
+    /**
+     * Registers `gamepadconnected` / `gamepaddisconnected` listeners and starts the
+     * per-frame `UpdateGamepads()` polling loop.
+     * Called once during engine initialisation — you do not need to call this manually.
+     */
     SetupGamepadEvents: function() {
         window.addEventListener("gamepadconnected", (event) => {
             const gamepad = event.gamepad;
@@ -377,6 +547,17 @@ var Input = {
                             return true;
                     }
                     break;
+                case 'touch':
+                    if (this.touch.down)
+                        return true;
+                    break;
+                case 'virtualbutton':
+                    if (this._virtualControls) {
+                        const btn = this._virtualControls.buttons.get(binding.id);
+                        if (btn && btn.down)
+                            return true;
+                    }
+                    break;
             }
         }
         return false;
@@ -408,6 +589,17 @@ var Input = {
                             return true;
                     }
                     break;
+                case 'touch':
+                    if (this.touch.any)
+                        return true;
+                    break;
+                case 'virtualbutton':
+                    if (this._virtualControls) {
+                        const btn = this._virtualControls.buttons.get(binding.id);
+                        if (btn && btn.pressed)
+                            return true;
+                    }
+                    break;
             }
         }
         return false;
@@ -436,6 +628,17 @@ var Input = {
                 case 'gamepad':
                     for (let i = 0; i < this.gamepads.length; i++) {
                         if (this.gamepads[i] && this.IsGamepadButtonUp(i, binding.code))
+                            return true;
+                    }
+                    break;
+                case 'touch':
+                    if (this.touch.up)
+                        return true;
+                    break;
+                case 'virtualbutton':
+                    if (this._virtualControls) {
+                        const btn = this._virtualControls.buttons.get(binding.id);
+                        if (btn && btn.up)
                             return true;
                     }
                     break;
@@ -504,6 +707,14 @@ var Input = {
                             break;
                         }
                      }
+                    break;
+                case 'virtualjoystick':
+                    if (this._virtualControls) {
+                        const joystick = this._virtualControls.joysticks.get(binding.id);
+                        if (joystick) {
+                            currentValue = binding.axis === 0 ? joystick.axisX : joystick.axisY;
+                        }
+                    }
                     break;
             }
             if (Math.abs(currentValue) > Math.abs(finalAxisValue)) {
@@ -632,6 +843,13 @@ var Input = {
         return false;
     },
 
+    /**
+     * Returns the raw value of a gamepad axis by its numeric index (-1 to 1).
+     * Prefer `GetGamepadStickValue` for named stick access.
+     * @param {number} gamepadIndex - Index of the gamepad.
+     * @param {number} axisIndex    - Raw axis index from the browser Gamepad API.
+     * @returns {number}
+     */
     GetGamepadAxisValue: function(gamepadIndex, axisIndex) {
         const gamepad = this.gamepads[gamepadIndex]?.gamepad;
         if (gamepad && gamepad.axes[axisIndex] !== undefined) {
@@ -640,6 +858,13 @@ var Input = {
         return 0;
     },
 
+    /**
+     * Returns a single axis component of a named stick.
+     * @param {number} gamepadIndex
+     * @param {"LS"|"RS"} stickId
+     * @param {0|1} axis - `0` = X axis, `1` = Y axis.
+     * @returns {number} Value in the range -1 to 1.
+     */
     GetGamepadStickAxisValue: function(gamepadIndex, stickId, axis) {
         const gamepad = this.gamepads[gamepadIndex];
         if (gamepad && gamepad.mapping) {
@@ -651,10 +876,22 @@ var Input = {
         return 0;
     },
 
+    /**
+     * Returns one axis component of the left stick.
+     * @param {number} gamepadIndex
+     * @param {0|1} axis - `0` = X, `1` = Y.
+     * @returns {number} Value in the range -1 to 1.
+     */
     GetGamepadLeftStickValue: function(gamepadIndex, axis) {
         return this.GetGamepadStickAxisValue(gamepadIndex, "LS", axis);
     },
 
+    /**
+     * Returns one axis component of the right stick.
+     * @param {number} gamepadIndex
+     * @param {0|1} axis - `0` = X, `1` = Y.
+     * @returns {number} Value in the range -1 to 1.
+     */
     GetGamepadRightStickValue: function(gamepadIndex, axis) {
         return this.GetGamepadStickAxisValue(gamepadIndex, "RS", axis);
     },
@@ -673,6 +910,13 @@ var Input = {
         return { x: 0, y: 0 };
     },
 
+    /**
+     * Returns `true` if the specified stick is pushed past the deadzone in the given direction.
+     * @param {number} gamepadIndex
+     * @param {"LS"|"RS"} stickId
+     * @param {"UP"|"DOWN"|"LEFT"|"RIGHT"} dir
+     * @returns {boolean}
+     */
     GetGamepadStickDirection: function(gamepadIndex, stickId, dir) {
         const gamepad = this.gamepads[gamepadIndex];
         if (gamepad && gamepad.mapping) {
@@ -727,6 +971,12 @@ var Input = {
 // #endregion
 
 // #region Update functions
+
+    /**
+     * Resets all single-frame input flags (key down/up, mouse down/up, touch down/up,
+     * virtual button down/up). Called automatically at the end of each engine frame —
+     * you do not need to call this manually.
+     */
     PostUpdate: function () {
         // clean keyboard keydown events
         for (var property in this.keyboard.keydown) {
@@ -746,6 +996,16 @@ var Input = {
         this.mouse.down = false;
         this.mouse.up = false;
 
+        // Reset per-frame touch flags (positions and active touches persist until changed)
+        this.touch.down = false;
+        this.touch.up = false;
+
+        // Reset per-frame virtual button states
+        for (const b of this._virtualControls.buttons.values()) {
+            b.down = false;
+            b.up   = false;
+        }
+
         // Reset mouse.moved and keyboard.anyKeyPressed flags
         this.mouse.moved = false;
         this.keyboard.anyKeyPressed = false;
@@ -754,6 +1014,11 @@ var Input = {
         this.UpdateGamepads();
     },
 
+    /**
+     * Polls the browser Gamepad API and updates `down`, `up`, and `pressed` arrays for
+     * every connected gamepad, including virtual stick-direction buttons (e.g. `"LS_LEFT"`).
+     * Called automatically each frame by `PostUpdate()` — you do not need to call this manually.
+     */
     UpdateGamepads: function() {
         // update current gamepad connected references
         const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -807,7 +1072,101 @@ var Input = {
                 });
             }
         }
-    }
+    },
+
+// #endregion
+
+// #region Virtual Controls
+
+    /**
+     * Registers a `VirtualJoystick` instance under a named id so it can be used in
+     * axis bindings: `{ type: 'virtualjoystick', id, axis }`.
+     * The joystick must be created first with `new VirtualJoystick(...)`, which also
+     * auto-registers it for drawing via `VirtualControlls`.
+     * @param {string} id                      - Unique key used in axis bindings.
+     * @param {VirtualJoystick} virtualJoystick - The joystick instance to register.
+     * @returns {VirtualJoystick}
+     */
+    RegisterVirtualJoystick: function(id, virtualJoystick) {
+        this._virtualControls.joysticks.set(id, virtualJoystick);
+        return virtualJoystick;
+    },
+
+    /**
+     * Registers a `VirtualButton` instance under a named id so it can be used in
+     * action bindings: `{ type: 'virtualbutton', id }`.
+     * The button must be created first with `new VirtualButton(...)`, which also
+     * auto-registers it for drawing via `VirtualControlls`.
+     * @param {string} id                  - Unique key used in action bindings.
+     * @param {VirtualButton} virtualButton - The button instance to register.
+     * @returns {VirtualButton}
+     */
+    RegisterVirtualButton: function(id, virtualButton) {
+        this._virtualControls.buttons.set(id, virtualButton);
+        return virtualButton;
+    },
+
+    /**
+     * Returns a registered `VirtualJoystick` by id, or `undefined` if not found.
+     * @param {string} id @returns {VirtualJoystick|undefined}
+     */
+    GetVirtualJoystick: function(id) {
+        return this._virtualControls.joysticks.get(id);
+    },
+
+    /**
+     * Returns a registered `VirtualButton` by id, or `undefined` if not found.
+     * @param {string} id @returns {VirtualButton|undefined}
+     */
+    GetVirtualButton: function(id) {
+        return this._virtualControls.buttons.get(id);
+    },
+
+    /**
+     * Updates all virtual control states for the current frame.
+     * Called automatically by the engine loop before `game.Update()`.
+     * You do not need to call this manually.
+     * @note Drawing is handled separately by `VirtualControlls.Draw(renderer)` in `virtualcontrols.js`.
+     */
+    UpdateVirtualControls: function() {
+        const { joysticks, buttons } = this._virtualControls;
+        if (joysticks.size === 0 && buttons.size === 0)
+            return;
+
+        const touches = this.touch.touches;
+        const claimed = this._claimedTouches;
+
+        // Pass 1: refresh controls that already have a claimed touch, release dead ones.
+        claimed.clear();
+        for (const ctrl of [...joysticks.values(), ...buttons.values()]) {
+            if (ctrl._touchId !== null) {
+                if (touches.has(ctrl._touchId)) {
+                    claimed.add(ctrl._touchId);
+                    ctrl._updateActive(touches.get(ctrl._touchId));
+                }
+                else {
+                    ctrl._release();
+                }
+            }
+        }
+
+        // Pass 2: let unattached controls claim new unclaimed touches.
+        for (const ctrl of [...joysticks.values(), ...buttons.values()]) {
+            if (ctrl._touchId !== null)
+                continue;
+
+            for (const [id, t] of touches) {
+                if (claimed.has(id))
+                    continue;
+
+                if (ctrl._tryClaimTouch(id, t)) {
+                    claimed.add(id);
+                    break;
+                }
+            }
+        }
+    },
+
 // #endregion
 };
 

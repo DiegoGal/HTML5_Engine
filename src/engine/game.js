@@ -49,7 +49,10 @@ class Game {
             
             // Debug configuration
             drawColliders: false,
-            collidersOnly: false
+            collidersOnly: false,
+
+            // Mobile support
+            mobileSupport: true
         };
         // config example:
         // {
@@ -64,6 +67,9 @@ class Game {
         //     analyzerfftSize: 128,   // size of the audio analyzer fft, default is 128
         //     analyzerSmoothing: 0.5, // smoothing of the audio analyzer, default is 0.5
         //     drawColliders: false,   // draw collision shapes for debugging
+        //     mobileSupport: false,   // mobile support is activated automatically on touch-capable
+        //                             // devices. Set to false to suppress it (e.g. hybrid laptops).
+        //                             // Set to true to force it on non-touch devices (e.g. for testing).
         // };
 
         /**
@@ -140,6 +146,30 @@ class Game {
                 this.config.useDevicePixelRatio || false,
                 this.config.preserveAspectRatio !== false // default to true
             );
+        }
+
+        // Enable mobile support automatically when the device has a touch screen,
+        // or when explicitly opted in via config. Set mobileSupport:false to suppress it
+        // even on touch-capable devices (e.g. hybrid laptops you want to treat as desktop).
+        const hasTouchScreen = navigator.maxTouchPoints > 0;
+        if (this.config.mobileSupport !== false && (hasTouchScreen || this.config.mobileSupport)) {
+            // Prevent the browser from handling touch gestures (scroll, pinch-zoom) on
+            // the canvas, and suppress long-press text selection on the page.
+            canvas.style.touchAction = 'none';
+            document.body.style.userSelect = 'none';
+    
+            // Inject viewport meta tag if not already present so the page scales correctly
+            // on mobile devices instead of rendering as a zoomed-out desktop page.
+            if (!document.querySelector('meta[name="viewport"]')) {
+                const meta = document.createElement('meta');
+                meta.name = 'viewport';
+                meta.content = 'width=device-width, initial-scale=1.0, user-scalable=no';
+                document.head.appendChild(meta);
+            }
+
+            // Register touch events — mirrors the primary finger into Input.mouse so all
+            // existing mouse-based game code works on mobile without any modifications.
+            Input.SetupTouchEvents(canvas);
         }
         
         this.gameObjects = [];

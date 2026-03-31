@@ -14,7 +14,8 @@ Documentation can be consulted [here](https://maxi-jp.github.io/spark.js/docs/).
 - **Sprite & Animation**: Full support for static sprites, sprite sheets, and complex animations.
 - **Sprite & Animation Support**: Render static sprites, sprite sections, and both basic and complex sprite sheet animations.
 - **Physics Integration**: Box2D physics support with easy-to-use Box2DGameObject classes for rectangles, sprites, and animated objects.
-- **Input Handling**: A powerful, abstract input system that maps actions (e.g., "Jump") and axes (e.g., "MoveHorizontal") to keyboard, mouse, and gamepad controls (with unified API for keyboard, mouse, and gamepad input).
+- **Input Handling**: A powerful, abstract input system that maps actions (e.g., "Jump") and axes (e.g., "MoveHorizontal") to keyboard, mouse, gamepad, and **touch / virtual controls** (on-screen joysticks and buttons for mobile devices).
+- **Mobile Support**: Automatic touch input mirroring, viewport injection, and scroll-prevention — enabled with a single `mobileSupport` config flag (auto-detected on touch devices).
 - **Audio Manager**: A simple yet powerful system to manage and play audio with optional analyzer support.
 - **UI & Menus**: Use standard HTML and CSS for creating game menus and overlays.
 - **Background Layers**: Create rich backgrounds with solid colors, gradients, parallax scrolling layers, and tilemaps.
@@ -30,7 +31,8 @@ Documentation can be consulted [here](https://maxi-jp.github.io/spark.js/docs/).
   - main.js               # Entry point and main loop
   - game.js               # Core Game class
   - gameobjects.js        # GameObject, SpriteObject, AnimationObject, Tileset, Camera, Pool, Background Layers
-  - input.js              # Keyboard, mouse, and gamepad input
+  - input.js              # Keyboard, mouse, gamepad, touch, and virtual on-screen controls
+  - virtualcontrols.js    # VirtualJoystick and VirtualButton class definitions
   - utils_classes.js      # Canvas drawing helpers
   - utils_math.js         # Math, vector, and collision utilities
   - audioplayer.js        # Audio system
@@ -107,6 +109,8 @@ Documentation can be consulted [here](https://maxi-jp.github.io/spark.js/docs/).
     <script src="engine/game.js"></script>
     <script src="engine/utils_classes.js"></script>
     <script src="engine/gameobjects.js"></script>
+    <!-- add this to support mobile touch + on-screen virtual controls -->
+    <script src="engine/virtualcontrols.js"></script>
     <!-- add this to use particle systems -->
     <script src="engine/particlesystem.js"></script>
     <!-- add these only if you want to use box2d physics -->
@@ -275,6 +279,38 @@ class MyPhysicsBox extends Box2DRectangleGO {
 
 ## Best Practices & Tips
 
+### Mobile & Touch
+- **Enable mobile support** by passing `mobileSupport: true` in `Configure()`, or leave it unset — it auto-detects touch devices:
+  ```javascript
+  this.Configure({ screenWidth: 640, screenHeight: 480, mobileSupport: true });
+  ```
+  This injects the viewport meta tag, disables scroll/select, and calls `Input.SetupTouchEvents()` automatically.
+- **Touch mirrors mouse** — the primary finger updates `Input.mouse`, so all existing mouse code works on mobile with no changes.
+- **`Input.touch`** exposes raw multi-touch state: `touch.any`, `touch.count`, `touch.down`, `touch.up`, `touch.touches` (Map of active points).
+- **Virtual controls** let you place on-screen joysticks and buttons, then bind them via the Actions & Axes system:
+  ```javascript
+  // In Start() — construct first, then register with Input for binding:
+  Input.RegisterAxis('MoveH', [
+      { type: 'key', positive: KEY_D, negative: KEY_A },
+      { type: 'virtualjoystick', id: 'move', axis: 0 },
+  ]);
+  Input.RegisterAction('Fire', [
+      { type: 'key', code: KEY_SPACE },
+      { type: 'virtualbutton', id: 'fire' },
+  ]);
+  const stick = new VirtualJoystick(90, this.screenHeight - 90, 70);
+  Input.RegisterVirtualJoystick('move', stick);
+
+  const btn = new VirtualButton(this.screenWidth - 90, this.screenHeight - 90, 50, '⚡');
+  Input.RegisterVirtualButton('fire', btn);
+
+  // In Draw() — always last so controls appear on top:
+  VirtualControlls.Draw(this.renderer);
+  ```
+  Requires `virtualcontrols.js` to be included **after** `input.js` in your HTML.
+
+> See `src/examples/touch/touch_example.js` and `touch.html` for a working mobile demo.
+
 ### Coordinate System and Display
 - **Always use `this.screenWidth` and `this.screenHeight`** instead of `canvas.width` and `canvas.height` for cross-compatibility with fullscreen modes
 - **Mouse coordinates** via `Input.mouse.x` and `Input.mouse.y` are automatically normalized to your game resolution
@@ -314,6 +350,7 @@ MIT License
 - [x] Create a documentation page/wiki. ✅DONE (see [the documentation page](https://maxi-jp.github.io/spark.js/docs/).)
 - [ ] Multiplayer with nodejs.
 - [x] ~~Think on a great name for the engine (like **`wat.js`** or something like that).~~ ✅DONE (engine renamed as "spark.js"!!! ✨)
+- [x] ~~Add mobile / touch-screen support with virtual on-screen controls.~~ ✅DONE
 
 ## Contributing
 

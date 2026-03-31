@@ -130,11 +130,15 @@ function Loop() {
 
     totalTime += deltaTime;
 
-    // resume audio context if suspended
-    if (Input.keyboard.anyKeyPressed || Input.mouse.pressed) {
+    // Resume audio context if suspended (keyboard, mouse, or touch)
+    if (Input.keyboard.anyKeyPressed || Input.mouse.pressed || Input.touch.any) {
         ResumeAudioContext();
     }
     
+    // Process virtual controls first so bindings reflect the current touch state
+    // when game.Update() reads them
+    Input.UpdateVirtualControls();
+
     // Game logic ---------
     Update(deltaTime);
     

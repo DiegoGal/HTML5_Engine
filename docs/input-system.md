@@ -1,10 +1,11 @@
 # Input System
 
-The engine provides two levels of input:
+The engine provides several levels of input:
 
 - [**Direct input**](#direct-input) — query specific keys, mouse buttons, and gamepad buttons directly. Great for quick prototyping or simple games.
 - [**Abstract input (Actions & Axes)**](#advanced-input-actions-amp-axes) — map named actions/axes to any device. Recommended for complex or controller-aware games.
 - [**Rumble / Haptic Feedback**](#rumble--haptic-feedback) — trigger vibration on controllers that support it.
+- [**Touch & Mobile**](#touch--mobile) — raw multi-touch state, automatic mouse mirroring, and on-screen virtual joysticks and buttons for mobile devices.
 
 ---
 
@@ -398,3 +399,241 @@ Registers a named rumble preset. `preset` fields: `strong` (0–1), `weak` (0–
 
 #### `ExecuteRumble(id, gamepadIndex)`
 Fires a previously registered preset. `gamepadIndex` defaults to `0`. Logs a warning if the id is not found.
+
+---
+
+## Touch & Mobile
+
+spark.js has built-in support for touch-screen devices. It includes raw multi-touch state, automatic mirroring of the primary touch to `Input.mouse`, and a full virtual on-screen controls system (joysticks and buttons) that integrates with the Actions & Axes system.
+
+### Enabling Mobile Support
+
+Pass `mobileSupport: true` in your game's `Configure()` call, or leave it unset — the engine auto-detects touch screens via `navigator.maxTouchPoints`:
+
+```javascript
+class MyGame extends Game {
+    constructor(renderer) {
+        super(renderer);
+        this.Configure({
+            screenWidth:  640,
+            screenHeight: 480,
+            mobileSupport: true,   // or omit — auto-detected on touch devices
+        });
+    }
+}
+```
+
+When active, the engine automatically:
+- Injects `<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">` if not already present.
+- Sets `touch-action: none` on the canvas (prevents the browser from scrolling or zooming when interacting with the game).
+- Sets `user-select: none` on `document.body` (prevents text-selection glitches on tap).
+- Calls `Input.SetupTouchEvents(canvas)` to register all touch listeners.
+
+### Touch State
+
+Raw touch state is available on `Input.touch`:
+
+| Expression | Description |
+|---|---|
+| `Input.touch.any` | `true` while at least one finger is touching the screen |
+| `Input.touch.count` | Number of currently active touch points |
+| `Input.touch.down` | `true` on the **single frame** the first touch begins |
+| `Input.touch.up` | `true` on the **single frame** the last touch ends |
+| `Input.touch.touches` | `Map<id, {id, x, y}>` of all active touch points, in game coordinates |
+
+### Mouse Mirroring
+
+The primary finger (the first touch point) is automatically mirrored to `Input.mouse`:
+
+```javascript
+// This works on desktop AND mobile — no code change required
+const dx = Input.mouse.x - this.player.x;
+const dy = Input.mouse.y - this.player.y;
+this.player.rotation = Math.atan2(dy, dx);
+
+if (Input.IsMouseDown()) {
+    this.FireAt(Input.mouse.x, Input.mouse.y);
+}
+```
+
+> All touch coordinates are automatically normalised to game resolution, just like mouse coordinates.
+
+### Virtual Controls
+
+Virtual controls place on-screen joysticks and buttons in the canvas. They integrate with the abstract Actions & Axes system using two new binding types: `'virtualjoystick'` and `'virtualbutton'`.
+
+There is a clear **separation of responsibilities** between the two files:
+- `input.js` — tracks touch state and maps virtual controls to the action/axis system
+- `virtualcontrols.js` — defines `VirtualJoystick`, `VirtualButton`, and the `VirtualControlls` rendering manager
+
+**Script tag required** — include `virtualcontrols.js` after `input.js`:
+
+```html
+<script src="engine/input.js"></script>
+<script src="engine/virtualcontrols.js"></script>
+```
+
+#### Setup in `Start()`
+
+Create each control with `new VirtualJoystick(...)` / `new VirtualButton(...)`, then register it with `Input` for binding. Construction automatically adds the control to `VirtualControlls` for drawing.
+
+```javascript
+Start() {
+    super.Start();
+
+    const sw = this.screenWidth;
+    const sh = this.screenHeight;
+
+    // Axes: keyboard / gamepad / virtual joystick all feed the same axis
+    Input.RegisterAxis('MoveH', [
+        { type: 'key',             positive: KEY_D, negative: KEY_A },
+        { type: 'gamepadaxis',     stick: 'LS',     axis: 0 },
+        { type: 'virtualjoystick', id: 'move',      axis: 0 },
+    ]);
+    Input.RegisterAxis('MoveV', [
+        { type: 'key',             positive: KEY_S, negative: KEY_W },
+        { type: 'gamepadaxis',     stick: 'LS',     axis: 1 },
+        { type: 'virtualjoystick', id: 'move',      axis: 1 },
+    ]);
+
+    // Action: keyboard / gamepad button / virtual button
+    Input.RegisterAction('Fire', [
+        { type: 'key',           code: KEY_SPACE },
+        { type: 'gamepad',       code: 'FACE_DOWN' },
+        { type: 'virtualbutton', id: 'fire' },
+    ]);
+
+    // 1. Construct the controls (auto-registers for drawing via VirtualControlls)
+    const stick = new VirtualJoystick(90, sh - 90, 70);
+    const btn   = new VirtualButton(sw - 90, sh - 90, 50, '⚡');
+
+    // 2. Register them with Input for axis/action binding
+    Input.RegisterVirtualJoystick('move', stick);
+    Input.RegisterVirtualButton('fire', btn);
+}
+```
+
+#### Drawing in `Draw()`
+
+Call `VirtualControlls.Draw(renderer)` last so the controls appear on top of everything else:
+
+```javascript
+Draw() {
+    // ... draw game world ...
+    VirtualControlls.Draw(this.renderer);  // always last
+}
+```
+
+#### Customising appearance
+
+Both `VirtualJoystick` and `VirtualButton` expose `Color` properties you can set after construction:
+
+```javascript
+const stick = new VirtualJoystick(90, sh - 90, 70);
+stick.baseColor = new Color(0, 0.5, 1, 0.2);   // blue tint
+stick.rimColor  = new Color(0, 0.5, 1, 0.6);
+stick.knobColor = new Color(0, 0.8, 1, 0.8);
+Input.RegisterVirtualJoystick('move', stick);
+
+const btn = new VirtualButton(sw - 90, sh - 90, 50, '⚡');
+btn.color        = new Color(1, 0.3, 0, 0.15);
+btn.pressedColor = new Color(1, 0.3, 0, 0.55);
+btn.rimColor     = new Color(1, 0.4, 0, 0.70);
+Input.RegisterVirtualButton('fire', btn);
+```
+
+You can also toggle visibility at any time: `stick.visible = false;`
+
+> **See it live:** [Touch & Virtual Controls demo](../touch.html) — a mobile-friendly "collect the dots" mini-game using a joystick to move and a button to burst.
+
+---
+
+### Touch API Reference
+
+#### `Input.touch`
+Object with the current multi-touch state. Fields: `any` (bool), `count` (int), `down` (bool, single frame), `up` (bool, single frame), `touches` (Map&lt;id, {id, x, y}&gt;).
+
+#### `SetupTouchEvents(canvas)`
+Registers `touchstart`, `touchmove`, `touchend`, and `touchcancel` listeners on the canvas. Called automatically when `mobileSupport` is active. Safe to call manually if you manage mobile setup yourself.
+
+---
+
+### Virtual Controls API Reference
+
+#### `RegisterVirtualJoystick(id, joystick)`
+Registers an existing `VirtualJoystick` instance under `id` for use in axis bindings `{ type: 'virtualjoystick', id, axis }`. The instance must be created first with `new VirtualJoystick(...)`, which auto-registers it for drawing.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `string` | Unique key referenced in axis bindings |
+| `joystick` | `VirtualJoystick` | The instance to register |
+
+#### `RegisterVirtualButton(id, button)`
+Registers an existing `VirtualButton` instance under `id` for use in action bindings `{ type: 'virtualbutton', id }`. The instance must be created first with `new VirtualButton(...)`, which auto-registers it for drawing.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | `string` | Unique key referenced in action bindings |
+| `button` | `VirtualButton` | The instance to register |
+
+#### `GetVirtualJoystick(id)`
+Returns the registered `VirtualJoystick` instance, or `undefined` if not found.
+
+#### `GetVirtualButton(id)`
+Returns the registered `VirtualButton` instance, or `undefined` if not found.
+
+#### `UpdateVirtualControls()`
+Processes active touch points and updates joystick/button state. Called automatically each frame by the engine loop — you do not need to call this yourself.
+
+#### `VirtualControlls.Draw(renderer)`
+Draws all virtual controls created during the session. This is a method on the global `VirtualControlls` object defined in `virtualcontrols.js`, **not** on `Input`. Call it at the end of your `Draw()` method so controls appear above the game world:
+```javascript
+Draw() {
+    // ... game world ...
+    VirtualControlls.Draw(this.renderer);  // always last
+}
+```
+
+---
+
+### `VirtualJoystick` class
+
+Defined in `virtualcontrols.js`. Instantiate directly with `new VirtualJoystick(x, y, baseRadius)`. Construction automatically registers the instance with `VirtualControlls` for drawing. Register with `Input.RegisterVirtualJoystick(id, instance)` for input binding.
+
+| Member | Type | Description |
+|---|---|---|
+| `axisX` | `number` (read-only) | Normalised horizontal deflection: `-1.0` (left) → `1.0` (right) |
+| `axisY` | `number` (read-only) | Normalised vertical deflection: `-1.0` (up) → `1.0` (down) |
+| `active` | `bool` (read-only) | `true` while a finger is touching this joystick |
+| `x`, `y` | `number` | Centre position (can be updated at runtime for dynamic layouts) |
+| `baseRadius` | `number` | Outer ring radius |
+| `knobRadius` | `number` | Draggable knob radius |
+| `visible` | `bool` | Set to `false` to hide (still processes touches) |
+| `baseColor` | `Color` | Fill colour of the outer ring |
+| `rimColor` | `Color` | Stroke colour of the outer ring |
+| `knobColor` | `Color` | Fill colour of the knob |
+| `rimLineWidth` | `number` | Stroke width of the outer ring |
+
+---
+
+### `VirtualButton` class
+
+Defined in `virtualcontrols.js`. Instantiate directly with `new VirtualButton(x, y, radius, label)`. Construction automatically registers the instance with `VirtualControlls` for drawing. Register with `Input.RegisterVirtualButton(id, instance)` for input binding.
+
+| Member | Type | Description |
+|---|---|---|
+| `down` | `bool` | `true` on the **single frame** the button is first pressed |
+| `pressed` | `bool` | `true` every frame the button is held down |
+| `up` | `bool` | `true` on the **single frame** the button is released |
+| `active` | `bool` (read-only) | `true` while a finger is pressing this button |
+| `x`, `y` | `number` | Centre position |
+| `radius` | `number` | Hit-test and visual radius |
+| `label` | `string` | Text/emoji rendered inside the button |
+| `visible` | `bool` | Set to `false` to hide (still processes touches) |
+| `color` | `Color` | Fill colour when not pressed |
+| `pressedColor` | `Color` | Fill colour when pressed |
+| `rimColor` | `Color` | Stroke colour |
+| `labelColor` | `Color` | Text colour |
+| `labelFont` | `string\|null` | Override font string. `null` = auto-sized from `radius` |
+| `rimLineWidth` | `number` | Stroke width |
+
