@@ -12,7 +12,8 @@ class TTSC extends Game {
         this.Configure({
             screenWidth: 1280,
             screenHeight: 720,
-            fillWindow: true
+            fillWindow: true,
+            mobileSupport: true
         });
 
         this.graphicAssets = {
@@ -77,6 +78,42 @@ class TTSC extends Game {
 
         this.player = new TTSCPlayer(new Vector2(this.sceneLimits.width / 2, this.sceneLimits.height / 2), 0, 1, this.graphicAssets.ships.img, this.sceneLimits);
         this.gameObjects.push(this.player);
+
+        // Player's input configuration --------------------
+        // Shot action
+        Input.RegisterAction("Shot", [
+            { type: 'key', code: KEY_SPACE },
+            { type: 'mouse' },
+            { type: 'gamepad', code: 'RT' }
+        ]);
+        // Horizontal axis
+        Input.RegisterAxis("MoveHorizontal", [
+            { type: 'key', positive: KEY_D, negative: KEY_A },
+            { type: 'key', positive: KEY_RIGHT, negative: KEY_LEFT },
+            { type: 'gamepadaxis', stick: 'LS', axis: 0 },
+            { type: 'gamepadbutton', positive: 'DPAD_RIGHT', negative: 'DPAD_LEFT' },
+            { type: 'virtualjoystick', id: 'move', axis: 0 }
+        ]);
+        // Vertical axis
+        Input.RegisterAxis("MoveVertical", [
+            { type: 'key', positive: KEY_S, negative: KEY_W },
+            { type: 'key', positive: KEY_DOWN, negative: KEY_UP },
+            { type: 'gamepadaxis', stick: 'LS', axis: 1 },
+            { type: 'gamepadbutton', positive: 'DPAD_DOWN', negative: 'DPAD_UP' },
+            { type: 'virtualjoystick', id: 'move', axis: 1 }
+        ]);
+
+        // Virtual on-screen joysticks for touch devices.
+        // Left stick  → movement (bound to the 'move' axes in TTSCPlayer).
+        // Right stick → aiming + auto-fire (read directly in TTSCPlayer.Update).
+        if (mobileWithTouchScreen) {
+            const jsRadius = Math.round(Math.min(this.screenWidth, this.screenHeight) * 0.12);
+            const margin = jsRadius + 30;
+            Input.RegisterVirtualJoystick('move',
+                new VirtualJoystick(margin, this.screenHeight - margin, jsRadius));
+            Input.RegisterVirtualJoystick('aim',
+                new VirtualJoystick(this.screenWidth - margin, this.screenHeight - margin, jsRadius));
+        }
 
         this.camera = new FollowCamera(Vector2.Zero(), this.player, -200, 140, -100, 40, 5);
         this.camera.Start();
@@ -175,6 +212,9 @@ class TTSC extends Game {
         this.playerScoreLabel.Draw(renderer);
 
         this.playerSpeedBar.Draw(renderer);
+
+        // Virtual controls are drawn last so they always appear on top, in screen space.
+        VirtualControlls.Draw(this.renderer);
     }
 
     AddEnemy(enemy) {

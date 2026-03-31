@@ -35,7 +35,8 @@ class Game {
          *   analyzerfftSize?: number,
          *   analyzerSmoothing?: number,
          *   drawColliders?: boolean,
-         *   collidersOnly?: boolean
+         *   collidersOnly?: boolean,
+         *   mobileSupport?: boolean
          * }}
          */
         this.config = {
@@ -52,7 +53,7 @@ class Game {
             collidersOnly: false,
 
             // Mobile support
-            mobileSupport: true
+            mobileSupport: false
         };
         // config example:
         // {
@@ -148,11 +149,13 @@ class Game {
             );
         }
 
-        // Enable mobile support automatically when the device has a touch screen,
-        // or when explicitly opted in via config. Set mobileSupport:false to suppress it
-        // even on touch-capable devices (e.g. hybrid laptops you want to treat as desktop).
-        const hasTouchScreen = navigator.maxTouchPoints > 0;
-        if (this.config.mobileSupport !== false && (hasTouchScreen || this.config.mobileSupport)) {
+        // Enable mobile support automatically when the device's primary pointer is coarse
+        // (i.e. finger/touch), which correctly identifies phones and tablets while excluding
+        // hybrid laptops that have a touchscreen but use a mouse as their primary input.
+        // Set mobileSupport:false to suppress it even on touch-first devices.
+        // Set mobileSupport:true to force it on (e.g. for testing on desktop).
+        // mobileWithTouchScreen is a global set in main.js and can be queried any time.
+        if (mobileWithTouchScreen || this.config.mobileSupport) {
             // Prevent the browser from handling touch gestures (scroll, pinch-zoom) on
             // the canvas, and suppress long-press text selection on the page.
             canvas.style.touchAction = 'none';

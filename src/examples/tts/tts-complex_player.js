@@ -34,36 +34,15 @@ class TTSCPlayer extends SpriteObject {
 
         this.collider = new CircleCollider(Vector2.Zero(), this.boundingRadious, this);
         game.AddCollider(this.collider);
-
-        // Player's input configuration --------------------
-        // Shot action
-        Input.RegisterAction("Shot", [
-            { type: 'key', code: KEY_SPACE },
-            { type: 'mouse' },
-            { type: 'gamepad', code: 'RT' }
-        ]);
-        // Horizontal axis
-        Input.RegisterAxis("MoveHorizontal", [
-            { type: 'key', positive: KEY_D, negative: KEY_A },
-            { type: 'key', positive: KEY_RIGHT, negative: KEY_LEFT },
-            { type: 'gamepadaxis', stick: 'LS', axis: 0 },
-            { type: 'gamepadbutton', positive: 'DPAD_RIGHT', negative: 'DPAD_LEFT' }
-        ]);
-        // Vertical axis
-        Input.RegisterAxis("MoveVertical", [
-            { type: 'key', positive: KEY_S, negative: KEY_W },
-            { type: 'key', positive: KEY_DOWN, negative: KEY_UP },
-            { type: 'gamepadaxis', stick: 'LS', axis: 1 },
-            { type: 'gamepadbutton', positive: 'DPAD_DOWN', negative: 'DPAD_UP' }
-        ]);
     }
 
     Update(deltaTime) {
         super.Update(deltaTime); // updates collider position
 
         const gamepad = Input.gamepads.length > 0;
+        const aimJoystick = Input.GetVirtualJoystick('aim');
 
-        // rotation
+        // rotation — priority: gamepad RS → touch aim stick → mouse
         if (gamepad) {
             const rightStickValue = Input.GetGamepadStickValue(0, "RS");
             if (Math.abs(rightStickValue.x) > 0.33 || Math.abs(rightStickValue.y) > 0.33) {
@@ -71,6 +50,12 @@ class TTSCPlayer extends SpriteObject {
                     rightStickValue.y,
                     rightStickValue.x
                 ) + PIH;
+            }
+        }
+        else if (aimJoystick && aimJoystick.active) {
+            // Aim joystick deflection maps directly to world-space direction
+            if (Math.abs(aimJoystick.axisX) > 0.2 || Math.abs(aimJoystick.axisY) > 0.2) {
+                this.rotation = Math.atan2(aimJoystick.axisY, aimJoystick.axisX) + PIH;
             }
         }
         else {
@@ -97,7 +82,10 @@ class TTSCPlayer extends SpriteObject {
         // shooting!
         this.fireRateAux -= deltaTime;
 
-        if (this.fireRateAux <= 0 && Input.GetAction("Shot")) {
+        // Auto-fire while the aim stick is actively deflected
+        const aimActive = aimJoystick && aimJoystick.active &&
+            (Math.abs(aimJoystick.axisX) > 0.2 || Math.abs(aimJoystick.axisY) > 0.2);
+        if (this.fireRateAux <= 0 && (Input.GetAction("Shot") || aimActive)) {
             const bullet = this.bulletPool.Activate();
             if (bullet) {
                 // TODO play shoot audio
