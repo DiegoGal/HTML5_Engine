@@ -15,10 +15,20 @@ var totalTime = 0.0; // acumulator of the time
 var drawStats = true;
 var debugMode = false;
 
-// current Game global reference
+/** @type {Game} The active Game instance. Set by the engine at startup and available globally throughout the game's lifetime. */
 var game = null;
 
+/** @type {AudioPlayer} The global AudioPlayer instance. Manages all audio playback, volume, and the optional audio analyser. */
 var audioPlayer = null;
+
+/**
+ * True when the device's primary pointer is coarse (finger/touch), meaning the game is
+ * running on a phone or tablet. Hybrid laptops with a touchscreen but a mouse as their
+ * primary pointer will be false. Can be used in Game.Start() to decide whether to show
+ * virtual controls.
+ * @type {boolean}
+ */
+var mobileWithTouchScreen = navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches;
 
 function LoadImages(assets, onloaded) {
     if (assets === null || Object.keys(assets).length === 0)
@@ -130,9 +140,16 @@ function Loop() {
 
     totalTime += deltaTime;
 
-    // Resume audio context if suspended (keyboard, mouse, or touch)
+    // Resume audio context and request fullscreen on first user interaction.
+    // Fullscreen hides the browser navigation bar on mobile (e.g. Android Chrome),
+    // which would otherwise consume ~25% of screen height in landscape.
     if (Input.keyboard.anyKeyPressed || Input.mouse.pressed || Input.touch.any) {
         ResumeAudioContext();
+        if (mobileWithTouchScreen && !document.fullscreenElement) {
+            document.documentElement.requestFullscreen?.().catch(() => {
+                console.warn("Failed to request fullscreen.");
+            });
+        }
     }
     
     // Process virtual controls first so bindings reflect the current touch state
