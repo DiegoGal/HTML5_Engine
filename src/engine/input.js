@@ -161,22 +161,39 @@ const stickDeadzone = 0.1;
 var Input = {
     /**
      * Current mouse state. Updated every frame.
+     *
+     * Per-button state is available on `left`, `middle`, and `right`.
+     * `down`, `up`, and `pressed` are kept as aliases for `left.*` so all
+     * existing code that only cares about the primary button continues to work.
+     *
      * @type {{
-     *   x: number,      // Mouse X position in canvas space
-     *   y: number,      // Mouse Y position in canvas space
-     *   down: boolean,  // True only on the frame the button was pressed
-     *   up: boolean,    // True only on the frame the button was released
-     *   pressed: boolean, // True every frame the button is held down
-     *   moved: boolean  // True if the mouse moved this frame
+     *   x: number,       // Mouse X in canvas space
+     *   y: number,       // Mouse Y in canvas space
+     *   moved: boolean,  // True if the mouse moved this frame
+     *   wheel: number,   // Scroll delta this frame (positive = down / away from user)
+     *   left:   { down: boolean, up: boolean, pressed: boolean },
+     *   middle: { down: boolean, up: boolean, pressed: boolean },
+     *   right:  { down: boolean, up: boolean, pressed: boolean },
+     *   down:    boolean, // Alias for left.down
+     *   up:      boolean, // Alias for left.up
+     *   pressed: boolean, // Alias for left.pressed
      * }}
      */
     mouse: {
         x: 0,
         y: 0,
-        down: false,
-        up: false,
-        pressed: false,
-        moved: false
+        moved: false,
+        wheel: 0,
+        left:   { down: false, up: false, pressed: false },
+        middle: { down: false, up: false, pressed: false },
+        right:  { down: false, up: false, pressed: false },
+        // Legacy aliases — always mirror the left button so existing code keeps working.
+        get down()     { return this.left.down; },
+        set down(v)    { this.left.down = v; },
+        get up()       { return this.left.up; },
+        set up(v)      { this.left.up = v; },
+        get pressed()  { return this.left.pressed; },
+        set pressed(v) { this.left.pressed = v; },
     },
 
     /**
@@ -346,13 +363,66 @@ var Input = {
     SetupMouseEvents: function(canvas) {
         // Set canvas reference for coordinate transformation
         this.SetCanvas(canvas);
+
+        const onMouseDown = (e) => {
+            // e.button: 0=left, 1=middle, 2=right
+            const btn = e.button === 0 ? Input.mouse.left
+                      : e.button === 1 ? Input.mouse.middle
+                      : e.button === 2 ? Input.mouse.right
+                      : null;
+            if (btn) {
+                btn.down = true;
+                btn.pressed = true;
+            }
+        };
+
+        const onMouseUp = (e) => {
+            const btn = e.button === 0 ? Input.mouse.left
+                      : e.button === 1 ? Input.mouse.middle
+                      : e.button === 2 ? Input.mouse.right
+                      : null;
+            if (btn) {
+                btn.up = true;
+                btn.pressed = false;
+            }
+        };
+
+        const onMouseMove = (e) => {
+            // Use normalized coordinate approach (robust with all CSS transforms)
+            if (!Input._canvas)
+                return;
+            
+            const rect = Input._canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Convert to normalized coordinates (0 to 1)
+            const normalizedX = x / rect.width;
+            const normalizedY = y / rect.height;
+            
+            // Map to internal canvas resolution
+            Input.mouse.x = normalizedX * Input._canvasTransform.canvasWidth;
+            Input.mouse.y = normalizedY * Input._canvasTransform.canvasHeight;
+            Input.mouse.moved = true;
+            //console.log(Input.mouse);
+        };
+
+        const onMouseWheel = (e) => {
+            Input.mouse.wheel += e.deltaY;
+        };
         
         // mouse click event
-        canvas.addEventListener("mousedown", MouseDown, false);
+        canvas.addEventListener("mousedown", onMouseDown, false);
         // mouse move event
-        canvas.addEventListener("mousemove", MouseMove, false);
+        canvas.addEventListener("mousemove", onMouseMove, false);
         // mouse up event
-        canvas.addEventListener("mouseup", MouseUp, false);
+        canvas.addEventListener("mouseup", onMouseUp, false);
+        // scroll wheel — accumulate delta; reset to 0 each frame in PostUpdate
+        canvas.addEventListener("wheel", onMouseWheel, { passive: true });
+        // suppress the right-click context menu on the canvas
+        canvas.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+        }, false);
     },
 
     /**
@@ -791,19 +861,46 @@ var Input = {
     },
 
     /**
-     * Returns true every frame the mouse button is held down.
-     * @returns {boolean}
+     * Returns the mouse button sub-object for the given button index.
+     * 0 = left (default), 1 = right, 2 = middle (wheel click).
+     * @param {number} [button=0]
+     * @returns {{down:boolean, up:boolean, pressed:boolean}}
      */
-    IsMousePressed: function() {
-        return this.mouse.pressed;
+    _mouseButton: function(button) {
+        if (button === 1)
+            return this.mouse.right;
+        
+        if (button === 2)
+            return this.mouse.middle;
+
+        return this.mouse.left;
     },
 
     /**
-     * Returns true only on the single frame the mouse button was first pressed.
+     * Returns `true` every frame the specified mouse button is held down.
+     * @param {0|1|2} [button=0] - 0 = left (default), 1 = right, 2 = middle (wheel click).
      * @returns {boolean}
      */
-    IsMouseDown: function () {
-        return this.mouse.down;
+    IsMousePressed: function(button = 0) {
+        return this._mouseButton(button).pressed;
+    },
+
+    /**
+     * Returns `true` only on the single frame the specified mouse button was first pressed.
+     * @param {0|1|2} [button=0] - 0 = left (default), 1 = right, 2 = middle (wheel click).
+     * @returns {boolean}
+     */
+    IsMouseDown: function(button = 0) {
+        return this._mouseButton(button).down;
+    },
+
+    /**
+     * Returns `true` only on the single frame the specified mouse button was released.
+     * @param {0|1|2} [button=0] - 0 = left (default), 1 = right, 2 = middle (wheel click).
+     * @returns {boolean}
+     */
+    IsMouseUp: function(button = 0) {
+        return this._mouseButton(button).up;
     },
 // #endregion
 
@@ -992,9 +1089,14 @@ var Input = {
             }
         }
 
-        // clean mouse down events
-        this.mouse.down = false;
-        this.mouse.up = false;
+        // clear per-button mouse down/up events (pressed persists until mouseup)
+        this.mouse.left.down   = false;
+        this.mouse.left.up     = false;
+        this.mouse.middle.down = false;
+        this.mouse.middle.up   = false;
+        this.mouse.right.down  = false;
+        this.mouse.right.up    = false;
+        this.mouse.wheel       = 0;
 
         // Reset per-frame touch flags (positions and active touches persist until changed)
         this.touch.down = false;
@@ -1169,45 +1271,3 @@ var Input = {
 
 // #endregion
 };
-
-function MouseDown(event) {
-    //let rect = canvas.getBoundingClientRect();
-    //let clickX = event.clientX - rect.left;
-    //let clickY = event.clientY - rect.top;
-
-    Input.mouse.down = true;
-    Input.mouse.pressed = true;
-
-    //console.log("MouseDown: " + "X=" + clickX + ", Y=" + clickY);
-}
-
-function MouseUp(event) {
-    //let rect = canvas.getBoundingClientRect();
-    //let clickX = event.clientX - rect.left;
-    //let clickY = event.clientY - rect.top;
-
-    Input.mouse.up = true;
-    Input.mouse.pressed = false;
-
-    //console.log("MouseUp: " + "X=" + clickX + ", Y=" + clickY);
-}
-
-function MouseMove(event) {
-    // Use normalized coordinate approach (robust with all CSS transforms)
-    if (!Input._canvas)
-        return;
-    
-    const rect = Input._canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    
-    // Convert to normalized coordinates (0 to 1)
-    const normalizedX = x / rect.width;
-    const normalizedY = y / rect.height;
-    
-    // Map to internal canvas resolution
-    Input.mouse.x = normalizedX * Input._canvasTransform.canvasWidth;
-    Input.mouse.y = normalizedY * Input._canvasTransform.canvasHeight;
-    Input.mouse.moved = true;
-    //console.log(Input.mouse);
-}

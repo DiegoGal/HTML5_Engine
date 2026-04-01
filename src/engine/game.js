@@ -385,7 +385,9 @@ class Game {
      *   analyzerfftSize?: number,
      *   analyzerSmoothing?: number,
      *   drawColliders?: boolean,
-     *   collidersOnly?: boolean
+     *   collidersOnly?: boolean,
+     *   mobileSupport?: boolean
+     *   
      * }} newConfig - Config properties to merge. All fields are optional.
      */
     Configure(newConfig) {

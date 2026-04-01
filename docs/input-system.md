@@ -60,42 +60,82 @@ Update(deltaTime) {
 
 ### Mouse
 
-In the Input object there is a `mouse` attribute with the mouse status, and other functions relative to it:
+`Input.mouse` exposes position, per-button state for all three buttons, and the scroll wheel.
+
+#### Position & movement
 
 | Expression | Description |
 |---|---|
-| `Input.mouse.x` / `Input.mouse.y` | Cursor position in **game coordinates** (automatically normalised to match the canvas resolution, works correctly in all display/fullscreen modes) |
-| `Input.IsMousePressed()` | Left button is **held down** (fires every frame) |
-| `Input.IsMouseDown()` | Left button was **just pressed** this frame (fires once) |
-| `Input.IsMouseUp()` | Left button was **just released** this frame (fires once) |
+| `Input.mouse.x` / `Input.mouse.y` | Cursor position in **game coordinates** (normalised to the canvas resolution, works in all display / fullscreen modes) |
+| `Input.mouse.moved` | `true` this frame if the cursor moved |
 
-Example use of basic mouse input logic in a `Game` class:
+#### Per-button state
+
+Each button has its own sub-object with three boolean flags:
+
+```javascript
+Input.mouse.left.down      // true only on the frame the left button was first pressed
+Input.mouse.left.pressed   // true every frame the left button is held down
+Input.mouse.left.up        // true only on the frame the left button was released
+
+Input.mouse.middle.down / .pressed / .up   // middle (scroll-wheel click)
+Input.mouse.right.down  / .pressed / .up   // right button
+```
+
+The legacy top-level aliases (`Input.mouse.down`, `.up`, `.pressed`) still work and always mirror the **left** button, so existing code requires no changes.
+
+The helper functions are also available and mirror the Unity-style API. All three accept an optional `button` index — `0` = left *(default)*, `1` = right, `2` = middle:
+
+| Function | Description |
+|---|---|
+| `Input.IsMousePressed(button?)` | Button **held** (fires every frame) |
+| `Input.IsMouseDown(button?)` | Button **just pressed** this frame (fires once) |
+| `Input.IsMouseUp(button?)` | Button **just released** this frame (fires once) |
+
+#### Scroll wheel
+
+| Expression | Description |
+|---|---|
+| `Input.mouse.wheel` | Scroll delta accumulated this frame. Positive = scrolled down (away from user), negative = up. Reset to `0` automatically each frame. |
+
+#### Example
 
 ```javascript
 Update(deltaTime) {
     super.Update(deltaTime);
 
-    // Track cursor position
+    // Track cursor
     this.crosshair.x = Input.mouse.x;
     this.crosshair.y = Input.mouse.y;
 
-    // Fire on click (single frame)
-    if (Input.IsMouseDown()) {
+    // Left button — fire on click (button 0 is the default, parameter can be omitted)
+    if (Input.IsMouseDown()) {              // or: Input.mouse.left.down
         this.FireAt(Input.mouse.x, Input.mouse.y);
     }
 
-    // Charge while held
-    if (Input.IsMousePressed()) {
-        this.chargeBar += deltaTime;
+    // Right button — open context menu on press
+    if (Input.IsMouseDown(1)) {             // or: Input.mouse.right.down
+        this.OpenContextMenu(Input.mouse.x, Input.mouse.y);
     }
 
-    // Release
-    if (Input.IsMouseUp()) {
-        this.LaunchCharged(this.chargeBar);
-        this.chargeBar = 0;
+    // Middle button — held to pan the camera
+    if (Input.IsMousePressed(2)) {          // or: Input.mouse.middle.pressed
+        this.PanCamera(Input.mouse.x, Input.mouse.y);
+    }
+
+    // Left button released — finish a drag
+    if (Input.IsMouseUp()) {               // or: Input.mouse.left.up
+        this.EndDrag();
+    }
+
+    // Scroll wheel — zoom
+    if (Input.mouse.wheel !== 0) {
+        this.camera.zoom -= Input.mouse.wheel * 0.001;
     }
 }
 ```
+
+> See [mousetest.html](../mousetest.html) for an interactive demo of all mouse button events and the scroll wheel.
 
 ### Keyboard + Mouse together — compact example
 
@@ -354,17 +394,36 @@ Returns `true` only on the frame the key is released.
 
 ### Direct Mouse Input
 
-#### `IsMousePressed(button)`
-Returns `true` as long as the mouse button is held. `0` = Left, `1` = Middle, `2` = Right.
-
-#### `IsMouseDown(button)`
-Returns `true` only on the first frame the button is pressed.
-
-#### `IsMouseUp(button)`
-Returns `true` only on the frame the button is released.
-
 #### `mouse`
-Object with `Input.mouse.x` and `Input.mouse.y` — automatically normalised to game resolution.
+The central mouse state object, updated every frame:
+
+| Property | Type | Description |
+|---|---|---|
+| `mouse.x` / `mouse.y` | `number` | Cursor position in game coordinates |
+| `mouse.moved` | `boolean` | `true` if the cursor moved this frame |
+| `mouse.wheel` | `number` | Scroll delta this frame (positive = down). Reset to `0` each frame. |
+| `mouse.left` | `{down, up, pressed}` | Left button state |
+| `mouse.middle` | `{down, up, pressed}` | Middle button (wheel-click) state |
+| `mouse.right` | `{down, up, pressed}` | Right button state |
+| `mouse.down` | `boolean` | Alias for `mouse.left.down` |
+| `mouse.up` | `boolean` | Alias for `mouse.left.up` |
+| `mouse.pressed` | `boolean` | Alias for `mouse.left.pressed` |
+
+For each button sub-object:
+- `.down` — `true` only on the **single frame** the button was first pressed
+- `.pressed` — `true` **every frame** the button is held
+- `.up` — `true` only on the **single frame** the button was released
+
+#### `IsMousePressed(button?)`
+Returns `true` as long as the specified mouse button is held. Equivalent to `Input.mouse.left.pressed` when called with no argument.
+
+#### `IsMouseDown(button?)`
+Returns `true` only on the first frame the specified button is pressed. Equivalent to `Input.mouse.left.down` when called with no argument.
+
+#### `IsMouseUp(button?)`
+Returns `true` only on the frame the specified button is released. Equivalent to `Input.mouse.left.up` when called with no argument.
+
+`button` values: `0` = left *(default)*, `1` = right, `2` = middle (wheel click).
 
 ---
 

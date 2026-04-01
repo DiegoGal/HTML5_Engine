@@ -65,6 +65,7 @@ Documentation can be consulted [here](https://maxi-jp.github.io/spark.js/docs/).
   - gamepad_tester.js     # Interactive gamepad visualiser (buttons, sticks, triggers)
   - input_actions_test.js # Abstract input system example
   - input_test.js         # Basic input system testing
+  - mouse_test.js         # Multi-button mouse events, scroll wheel, and click trail demo
   - rumble_test.js        # Gamepad haptic/rumble feedback demo
   - lines_intersection.js # Line intersection algorithms
   - object_pooling.js     # Object pooling performance demo
