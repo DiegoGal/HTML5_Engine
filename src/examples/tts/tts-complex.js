@@ -27,6 +27,7 @@ class TTSC extends Game {
             }
         };
 
+        this.lastState = null;
         this.state = GAME_STATE.MAIN_MENU;
 
         // background gradient
@@ -51,6 +52,10 @@ class TTSC extends Game {
             new Vector2(this.sceneLimits.width / 2, this.sceneLimits.height - 50)
         ]
 
+        // UI and Menu related variables
+
+        this.mainMenu = null;
+
         this.playerScore = 0;
         this.playerScoreLabel = new TextLabel("0", new Vector2(this.screenWidth / 2, 50), "40px Comic Sans MS", Color.white, "center", "bottom");        
 
@@ -65,12 +70,8 @@ class TTSC extends Game {
     Start() {
         super.Start();
 
-        this.state = GAME_STATE.INTRO;
-
-        // Gamepad rumble
-        Input.RegisterRumble("Damage", 0.4, 0.2, 150, 0);
-        Input.RegisterRumble("EnemyKilled", 0, 0.25, 100, 0);
-
+        this.state = GAME_STATE.MAIN_MENU;
+        
         // configure background gradient
         this.bgGrad = new LinearGradient(this.renderer, new Vector2(0, 1), [
             [0, "#191200"],
@@ -78,68 +79,120 @@ class TTSC extends Game {
             [0.35, "#07073e"],
             [0.95, "#22375e"],
             [1, "#274f98"]
-        ]);
+        ]);                                
+        
+        // Initialize menus
+        this.mainMenu = new MainMenu(this, canvas);
+        this.mainMenu.Start();
+    }
 
+    StartLvl() {
+        this.state = GAME_STATE.INTRO;
+
+        // initialize the mouse position circle
+        // TODO: replace with a crosshair sprite using the crosshair image asset, and make it only visible when aiming (inside game area)
         this.mouseCircle = new Circle(new Vector2(0, 0), 5, Color.red, 1);
 
+        // initialize the player in the center of the scene limits
         this.player = new TTSCPlayer(new Vector2(this.sceneLimits.width / 2, this.sceneLimits.height / 2), 0, 1, this.graphicAssets.ships.img, this.sceneLimits);
-        this.gameObjects.push(this.player);
+        this.gameObjects.push(this.player);        
 
+        // configure the camera to follow the player
+        this.camera = new FollowCamera(Vector2.Zero(), this.player, -200, 140, -100, 40, 5);
+        this.camera.Start();
+
+        this.player.Start();   
+            
         // Initialize player lives UI
         for (let i = 0; i < this.lives; i++) {
             this.playerLives.push(new Sprite(this.graphicAssets.ships.img, new Vector2(this.screenWidth - 250 + i * 30, 20), 0, 0.5, 1));
         }
-
-
-        // Player's input configuration --------------------
-        // Shot action
-        Input.RegisterAction("Shot", [
-            { type: 'key', code: KEY_SPACE },
-            { type: 'mouse' },
-            { type: 'gamepad', code: 'RT' }
-        ]);
-        // Horizontal axis
-        Input.RegisterAxis("MoveHorizontal", [
-            { type: 'key', positive: KEY_D, negative: KEY_A },
-            { type: 'key', positive: KEY_RIGHT, negative: KEY_LEFT },
-            { type: 'gamepadaxis', stick: 'LS', axis: 0 },
-            { type: 'gamepadbutton', positive: 'DPAD_RIGHT', negative: 'DPAD_LEFT' },
-            { type: 'virtualjoystick', id: 'move', axis: 0 }
-        ]);
-        // Vertical axis
-        Input.RegisterAxis("MoveVertical", [
-            { type: 'key', positive: KEY_S, negative: KEY_W },
-            { type: 'key', positive: KEY_DOWN, negative: KEY_UP },
-            { type: 'gamepadaxis', stick: 'LS', axis: 1 },
-            { type: 'gamepadbutton', positive: 'DPAD_DOWN', negative: 'DPAD_UP' },
-            { type: 'virtualjoystick', id: 'move', axis: 1 }
-        ]);
-
-        // Virtual on-screen joysticks for touch devices.
-        // Left stick  → movement (bound to the 'move' axes in TTSCPlayer).
-        // Right stick → aiming + auto-fire (read directly in TTSCPlayer.Update).
-        if (mobileWithTouchScreen) {
-            const jsRadius = Math.round(Math.min(this.screenWidth, this.screenHeight) * 0.12);
-            const margin = jsRadius + 30;
-            Input.RegisterVirtualJoystick('move',
-                new VirtualJoystick(margin, this.screenHeight - margin, jsRadius));
-            Input.RegisterVirtualJoystick('aim',
-                new VirtualJoystick(this.screenWidth - margin, this.screenHeight - margin, jsRadius));
-        }
-
-        this.camera = new FollowCamera(Vector2.Zero(), this.player, -200, 140, -100, 40, 5);
-        this.camera.Start();
-        
+                
         if (this.state === GAME_STATE.INTRO) {
             this.camera.scale = 10;
             this.player.active = false;
-        }
+        }        
 
-        this.player.Start();
-
-        // initialize the starting enemies
+        // initialize the starting enemies array
         this.enemies = [];
     }
+
+    _ResetGame() {
+        // reset player position and state
+        this.player.position.Set(this.sceneLimits.width / 2, this.sceneLimits.height / 2);
+        this.lives = 5;
+        this.playerScore = 0;
+        this.playerScoreLabel.text = this.playerScore;
+        this.player.Destroy();
+        this.player = null;
+
+        
+        
+        this.timeToSpawnEnemy = 1;
+        
+
+        // reset the camera
+        this.camera.position.Set(0, 0);
+        this.camera.scale = 1;
+        this.camera.rotation = 0;
+
+        // destroy all existing enemies
+        for (let enemy of this.enemies) {
+            this.Destroy(enemy);
+        }
+        this.enemies = [];
+
+        this.mainMenu.ShowMenu();
+        this.EnableInput(false);
+        this.state = GAME_STATE.MAIN_MENU;
+    }
+
+    EnableInput(value = true) {
+        if (value) {
+            // Player's input configuration --------------------
+            // Gamepad rumble
+            Input.RegisterRumble("Damage", 0.4, 0.2, 150, 0);
+            Input.RegisterRumble("EnemyKilled", 0, 0.25, 100, 0);
+            // Shot action
+            Input.RegisterAction("Shot", [
+                { type: 'key', code: KEY_SPACE },
+                { type: 'mouse' },
+                { type: 'gamepad', code: 'RT' }
+            ]);
+            // Horizontal axis
+            Input.RegisterAxis("MoveHorizontal", [
+                { type: 'key', positive: KEY_D, negative: KEY_A },
+                { type: 'key', positive: KEY_RIGHT, negative: KEY_LEFT },
+                { type: 'gamepadaxis', stick: 'LS', axis: 0 },
+                { type: 'gamepadbutton', positive: 'DPAD_RIGHT', negative: 'DPAD_LEFT' },
+                { type: 'virtualjoystick', id: 'move', axis: 0 }
+            ]);
+            // Vertical axis
+            Input.RegisterAxis("MoveVertical", [
+                { type: 'key', positive: KEY_S, negative: KEY_W },
+                { type: 'key', positive: KEY_DOWN, negative: KEY_UP },
+                { type: 'gamepadaxis', stick: 'LS', axis: 1 },
+                { type: 'gamepadbutton', positive: 'DPAD_DOWN', negative: 'DPAD_UP' },
+                { type: 'virtualjoystick', id: 'move', axis: 1 }
+            ]);
+
+            // Virtual on-screen joysticks for touch devices.
+            // Left stick  → movement (bound to the 'move' axes in TTSCPlayer).
+            // Right stick → aiming + auto-fire (read directly in TTSCPlayer.Update).
+            if (mobileWithTouchScreen) {
+                const jsRadius = Math.round(Math.min(this.screenWidth, this.screenHeight) * 0.12);
+                const margin = jsRadius + 30;
+                Input.RegisterVirtualJoystick('move',
+                    new VirtualJoystick(margin, this.screenHeight - margin, jsRadius));
+                Input.RegisterVirtualJoystick('aim',
+                    new VirtualJoystick(this.screenWidth - margin, this.screenHeight - margin, jsRadius));
+            }           
+        }
+        else {
+            Input.ClearMappings();
+        } 
+    }
+
 
     Update(deltaTime) {
         // update the game objects
@@ -147,20 +200,28 @@ class TTSC extends Game {
 
         switch (this.state) {
             case GAME_STATE.MAIN_MENU:
-                
+                if (this.lastState !== GAME_STATE.MAIN_MENU) {
+                    this.mainMenu.ShowMenu();
+                }                
                 break;
             case GAME_STATE.INTRO:
                 this._updateIntro(deltaTime);
                 break;
-            case GAME_STATE.GAME:
+            case GAME_STATE.GAME:                
                 this._updateGame(deltaTime);
+                // update the camera
+                this.camera.Update(deltaTime);
                 break;
             case GAME_STATE.GAME_OVER:
-                
+                if (this.lastState !== GAME_STATE.GAME_OVER) {
+                    // reset the game to the main menu
+                    this._ResetGame();                    
+                }
                 break;
         }
-        // update the camera
-        this.camera.Update(deltaTime);
+
+        // Update the last state variable for menu toggling logic
+        this.lastState = this.state;
     }
 
     _updateIntro(deltaTime) {
@@ -169,6 +230,8 @@ class TTSC extends Game {
             this.camera.scale = 1;
             this.camera.rotation += 5 * deltaTime;
             if ((this.camera.rotation % PI2) <= 0.1) {
+                // end of intro, start the game
+                this.EnableInput(true);
                 this.camera.rotation = 0;
                 this.state = GAME_STATE.GAME;
                 this.player.active = true;
@@ -195,7 +258,8 @@ class TTSC extends Game {
         // background
         this.renderer.DrawGradientRectangle(0, 0, this.screenWidth, this.screenHeight, this.bgGrad);
 
-        this.camera.PreDraw(this.renderer);
+        if (this.camera)
+            this.camera.PreDraw(this.renderer);
 
         // background grid
         // horizontal lines
@@ -216,10 +280,12 @@ class TTSC extends Game {
         // draw the game objects
         super.Draw();
 
-        this.camera.PostDraw(this.renderer);
-
+        if (this.camera)
+            this.camera.PostDraw(this.renderer);
+        
         // draw the mouse position
-        this.mouseCircle.Draw(renderer);
+        if (this.mouseCircle)
+            this.mouseCircle.Draw(renderer);
 
         this.playerScoreLabel.Draw(renderer);
 
@@ -228,8 +294,10 @@ class TTSC extends Game {
         this.playerLivesLabel.Draw(renderer);
 
         // Draw player lives
-        for (let i = 0; i < this.lives; i++) {
-            this.playerLives[i].DrawSection(renderer, 52, 244, 48, 48);
+        if (this.playerLives.length > 0) {
+            for (let i = 0; i < this.lives; i++) {
+                this.playerLives[i].DrawSection(renderer, 52, 244, 48, 48);
+            }
         }
 
         // Virtual controls are drawn last so they always appear on top, in screen space.
@@ -295,6 +363,39 @@ class TTSC extends Game {
         this.camera.ZoomPunch(0.95, 0.45);
 
         this.RemoveEnemy(enemy);
+    }
+
+    OnMenuStartButton() {
+        this.StartLvl();
+    }
+}
+
+class MainMenu extends HTMLMenu {
+    constructor(game, canvas) {
+        super(game, "#mainMenu", "#container", canvas, true);
+    }
+
+    Start() {
+        super.Start();
+
+        this.SetupElements([
+            "#menuStart",
+            "#menuCredits",
+            '#credits'
+        ]);
+
+        this.SetupButtons([
+            { selector: "#menuStart", callback: this.StartButton.bind(this) }
+        ]);
+    }
+
+    StartButton() {
+        this.SetContainerStyle('top: -100%; opacity: 0;');
+        this.game.OnMenuStartButton();
+    }
+    
+    ShowMenu() {
+        this.SetContainerStyle('top: 0%; opacity: 1;');
     }
 }
 
