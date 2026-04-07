@@ -34,6 +34,7 @@ class TTSC extends Game {
 
         this.mouseCircle = null;
         this.player = null;
+        this.lives = 5;
         this.enemies = [];
         this.camera = null;
 
@@ -51,9 +52,14 @@ class TTSC extends Game {
         ]
 
         this.playerScore = 0;
-        this.playerScoreLabel = new TextLabel("0", new Vector2(this.screenWidth / 2, 50), "40px Comic Sans MS", Color.white, "center", "bottom");
+        this.playerScoreLabel = new TextLabel("0", new Vector2(this.screenWidth / 2, 50), "40px Comic Sans MS", Color.white, "center", "bottom");        
 
         this.playerSpeedBar = new SpeedMultBar(new Vector2(this.screenWidth - 120, 20), 100, 20);
+
+        // Player lives UI
+        this.playerLivesLabel = new TextLabel("Ships:", new Vector2(this.screenWidth * 2 - 320, 40), "30px Comic Sans MS", Color.white, "center", "bottom");
+        this.playerLives = [];
+
     }
 
     Start() {
@@ -78,6 +84,12 @@ class TTSC extends Game {
 
         this.player = new TTSCPlayer(new Vector2(this.sceneLimits.width / 2, this.sceneLimits.height / 2), 0, 1, this.graphicAssets.ships.img, this.sceneLimits);
         this.gameObjects.push(this.player);
+
+        // Initialize player lives UI
+        for (let i = 0; i < this.lives; i++) {
+            this.playerLives.push(new Sprite(this.graphicAssets.ships.img, new Vector2(this.screenWidth - 250 + i * 30, 20), 0, 0.5, 1));
+        }
+
 
         // Player's input configuration --------------------
         // Shot action
@@ -213,6 +225,13 @@ class TTSC extends Game {
 
         this.playerSpeedBar.Draw(renderer);
 
+        this.playerLivesLabel.Draw(renderer);
+
+        // Draw player lives
+        for (let i = 0; i < this.lives; i++) {
+            this.playerLives[i].DrawSection(renderer, 52, 244, 48, 48);
+        }
+
         // Virtual controls are drawn last so they always appear on top, in screen space.
         VirtualControlls.Draw(this.renderer);
     }
@@ -263,8 +282,12 @@ class TTSC extends Game {
     }
 
     EnemyCollidesWithPlayer(enemy) {
-        this.playerScore -= enemy.score;
-        this.playerScoreLabel.text = this.playerScore;
+        this.lives--;
+
+        if (this.lives <= 0) {
+            this.lives = 0;
+            this.state = GAME_STATE.GAME_OVER;
+        }
 
         Input.ExecuteRumble("Damage");
 
