@@ -123,6 +123,7 @@ class TTSC extends Game {
         this.lives = 5;
         this.playerScore = 0;
         this.playerScoreLabel.text = this.playerScore;
+        this.gameObjects.splice(this.gameObjects.indexOf(this.player), 1);  
         this.player.Destroy();
         this.player = null;
 
