@@ -6,6 +6,15 @@ const GAME_STATE = {
 }
 
 class TTSC extends Game {
+
+    get state() {
+        return this._state;
+    }
+    set state(value) {
+        this._lastState = this._state;
+        this._state = value;
+    }
+
     constructor(renderer) {
         super(renderer);
 
@@ -25,10 +34,10 @@ class TTSC extends Game {
                 path: "src/examples/tts/assets/crosshair060.png",
                 img: null
             }
-        };
+        };        
 
-        this.lastState = null;
-        this.state = GAME_STATE.MAIN_MENU;
+
+        this.gamePaused = false;
 
         // background gradient
         this.bgGrad = null;
@@ -55,6 +64,7 @@ class TTSC extends Game {
         // UI and Menu related variables
 
         this.mainMenu = null;
+        this.pauseMenu = null;
 
         this.playerScore = 0;
         this.playerScoreLabel = new TextLabel("0", new Vector2(this.screenWidth / 2, 50), "30px futuristic", Color.white, "center", "bottom");        
@@ -84,10 +94,32 @@ class TTSC extends Game {
         // Initialize menus
         this.mainMenu = new MainMenu(this, canvas);
         this.mainMenu.Start();
+
+        this.pauseMenu = new PauseMenu(this, canvas);
+        this.pauseMenu.Start();
+        this.pauseMenu.HideMenu();
+
+        // Setup events to automatically pause the game when the window loses focus or the tab becomes inactive
+        this.SetupPauseEvents();
     }
 
     StartLvl() {
         this.state = GAME_STATE.INTRO;
+
+        // Player's input configuration --------------------
+        // Gamepad rumble
+        Input.RegisterRumble("Damage", 0.4, 0.2, 150, 0);
+        Input.RegisterRumble("EnemyKilled", 0, 0.25, 100, 0);
+        // Enable player input for the game (disable in intro and game over states)
+        this.EnablePlayerInput(true);
+        // Pause action, put here to be available in the intro and game states, but only used in the game state
+        Input.RegisterAction("Pause", [
+            { type: 'key', code: KEY_P },
+            { type: 'key', code: KEY_ESCAPE },
+            { type: 'gamepad', code: 'START' }
+        ]);
+
+                  
 
         // initialize the mouse position circle
         // TODO: replace with a crosshair sprite using the crosshair image asset, and make it only visible when aiming (inside game area)
@@ -127,11 +159,8 @@ class TTSC extends Game {
         this.player.Destroy();
         this.player = null;
 
-        
-        
         this.timeToSpawnEnemy = 1;
         
-
         // reset the camera
         this.camera.position.Set(0, 0);
         this.camera.scale = 1;
@@ -144,16 +173,13 @@ class TTSC extends Game {
         this.enemies = [];
 
         this.mainMenu.ShowMenu();
-        this.EnableInput(false);
+        this.EnablePlayerInput(false);
         this.state = GAME_STATE.MAIN_MENU;
+        console.log("Game reset to main menu");
     }
 
-    EnableInput(value = true) {
+    EnablePlayerInput(value = true) {
         if (value) {
-            // Player's input configuration --------------------
-            // Gamepad rumble
-            Input.RegisterRumble("Damage", 0.4, 0.2, 150, 0);
-            Input.RegisterRumble("EnemyKilled", 0, 0.25, 100, 0);
             // Shot action
             Input.RegisterAction("Shot", [
                 { type: 'key', code: KEY_SPACE },
@@ -176,7 +202,7 @@ class TTSC extends Game {
                 { type: 'gamepadbutton', positive: 'DPAD_DOWN', negative: 'DPAD_UP' },
                 { type: 'virtualjoystick', id: 'move', axis: 1 }
             ]);
-
+            
             // Virtual on-screen joysticks for touch devices.
             // Left stick  → movement (bound to the 'move' axes in TTSCPlayer).
             // Right stick → aiming + auto-fire (read directly in TTSCPlayer.Update).
@@ -187,42 +213,81 @@ class TTSC extends Game {
                     new VirtualJoystick(margin, this.screenHeight - margin, jsRadius));
                 Input.RegisterVirtualJoystick('aim',
                     new VirtualJoystick(this.screenWidth - margin, this.screenHeight - margin, jsRadius));
-            }           
+            }
         }
         else {
-            Input.ClearMappings();
-        } 
+            Input.UnregisterAction("Shot");
+            Input.UnregisterAxis("MoveHorizontal");
+            Input.UnregisterAxis("MoveVertical");
+
+            if (mobileWithTouchScreen) {
+                Input.RemoveVirtualJoystick('move');
+                Input.RemoveVirtualJoystick('aim');
+            }
+        }
     }
 
+    // Pauses or resumes the game based on the provided value. 
+    // When pausing, it shows the pause menu and disables input. 
+    // When resuming, it hides the pause menu and re-enables input.
+    PauseGame(value = true) {
+        if (this.state === GAME_STATE.GAME && this.gamePaused !== value) {            
+                this.gamePaused = value;
+                if (value) {
+                    this.pauseMenu.ShowMenu();                    
+                }else {
+                    this.pauseMenu.HideMenu();
+                   
+                }
+                 this.EnablePlayerInput(!value);            
+        }
+    }
+
+    SetupPauseEvents() {
+        const pauseIfNeeded = () => {
+            if (this.state === GAME_STATE.GAME && !this.gamePaused) {
+                this.PauseGame(true);
+            }
+        };
+
+        window.addEventListener('blur', pauseIfNeeded);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pauseIfNeeded();
+            }
+        });
+    }
 
     Update(deltaTime) {
-        // update the game objects
-        super.Update(deltaTime);
-
         switch (this.state) {
             case GAME_STATE.MAIN_MENU:
+                super.Update(deltaTime);
                 if (this.lastState !== GAME_STATE.MAIN_MENU) {
                     this.mainMenu.ShowMenu();
-                }                
+                }
                 break;
             case GAME_STATE.INTRO:
+                super.Update(deltaTime);
                 this._updateIntro(deltaTime);
                 break;
-            case GAME_STATE.GAME:                
-                this._updateGame(deltaTime);
-                // update the camera
-                this.camera.Update(deltaTime);
+            case GAME_STATE.GAME:
+                if (!this.gamePaused) {
+                    super.Update(deltaTime);
+                    this._updateGame(deltaTime);
+                    this.camera.Update(deltaTime);
+                }
+                if (Input.GetActionDown("Pause")) {                    
+                    this.PauseGame(!this.gamePaused);
+                }
                 break;
             case GAME_STATE.GAME_OVER:
-                if (this.lastState !== GAME_STATE.GAME_OVER) {
+                super.Update(deltaTime);
+                if (this._lastState !== GAME_STATE.GAME_OVER) {
                     // reset the game to the main menu
-                    this._ResetGame();                    
+                    this._ResetGame();
                 }
                 break;
         }
-
-        // Update the last state variable for menu toggling logic
-        this.lastState = this.state;
     }
 
     _updateIntro(deltaTime) {
@@ -232,7 +297,7 @@ class TTSC extends Game {
             this.camera.rotation += 5 * deltaTime;
             if ((this.camera.rotation % PI2) <= 0.1) {
                 // end of intro, start the game
-                this.EnableInput(true);
+                this.EnablePlayerInput(true);
                 this.camera.rotation = 0;
                 this.state = GAME_STATE.GAME;
                 this.player.active = true;
@@ -356,6 +421,7 @@ class TTSC extends Game {
         if (this.lives <= 0) {
             this.lives = 0;
             this.state = GAME_STATE.GAME_OVER;
+            console.log("Game Over");
         }
 
         Input.ExecuteRumble("Damage");
@@ -381,8 +447,6 @@ class MainMenu extends HTMLMenu {
 
         this.SetupElements([
             "#menuStart",
-            "#menuCredits",
-            '#credits'
         ]);
 
         this.SetupButtons([
@@ -397,6 +461,32 @@ class MainMenu extends HTMLMenu {
     
     ShowMenu() {
         this.SetContainerStyle('top: 0%; opacity: 1;');
+    }
+}
+
+class PauseMenu extends HTMLMenu {
+    constructor(game, canvas) {
+        super(game, "#pauseMenu", "#container", canvas, true);
+    }
+
+    Start() {
+        super.Start();
+
+        this.SetupElements([
+            "#menuResume"
+        ]);
+
+        this.SetupButtons([
+            { selector: "#menuResume", callback: this.ResumeButton.bind(this) }
+        ]);
+    }
+
+    ResumeButton() {
+        this.game.PauseGame(false);
+    }
+    
+    ShowMenu() {
+        this.SetContainerStyle('top: 0%; opacity: 1; pointer-events: auto;');
     }
 }
 

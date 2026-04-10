@@ -11,13 +11,31 @@
 }
 
 #mainMenu {
-    background-color: rgba(0, 0, 0, 0.95);
+    background-color: rgba(0, 0, 0, 0.95);    
     width: 100%;
     height: 100%;
     position: absolute;
     top: 0;
     z-index: 1001;
     transition: top 0.5s, opacity 0.5s ease-in-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    opacity: 1;
+}
+
+#pauseMenu {
+    background-color: rgba(0, 0, 0, 0.95);
+    width: 50%;
+    height: 50%;
+    position: absolute;
+    right: 25%;
+    left: 25%;
+    bottom: 50%;    
+    z-index: 1001;
+    transition: opacity 0.1s ease-in-out;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -35,6 +53,12 @@
 #mainMenu h2 {
     font-size: 24px;
     margin-bottom: 60px;
+    font-family: futuristic, sans-serif;
+}
+
+#pauseMenu h1 {
+    font-size: 38px;
+    margin-bottom: 30px;    
     font-family: futuristic, sans-serif;
 }
 
