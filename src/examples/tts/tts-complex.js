@@ -57,12 +57,12 @@ class TTSC extends Game {
         this.mainMenu = null;
 
         this.playerScore = 0;
-        this.playerScoreLabel = new TextLabel("0", new Vector2(this.screenWidth / 2, 50), "40px Comic Sans MS", Color.white, "center", "bottom");        
+        this.playerScoreLabel = new TextLabel("0", new Vector2(this.screenWidth / 2, 50), "30px futuristic", Color.white, "center", "bottom");        
 
         this.playerSpeedBar = new SpeedMultBar(new Vector2(this.screenWidth - 120, 20), 100, 20);
 
         // Player lives UI
-        this.playerLivesLabel = new TextLabel("Ships:", new Vector2(this.screenWidth * 2 - 320, 40), "30px Comic Sans MS", Color.white, "center", "bottom");
+        this.playerLivesLabel = new TextLabel("Ships:", new Vector2(this.screenWidth * 2 - 370, 50), "30px futuristic", Color.white, "center", "bottom");
         this.playerLives = [];
 
     }
@@ -105,7 +105,7 @@ class TTSC extends Game {
             
         // Initialize player lives UI
         for (let i = 0; i < this.lives; i++) {
-            this.playerLives.push(new Sprite(this.graphicAssets.ships.img, new Vector2(this.screenWidth - 250 + i * 30, 20), 0, 0.5, 1));
+            this.playerLives.push(new Sprite(this.graphicAssets.ships.img, new Vector2(this.screenWidth - 265 + i * 30, 33), 0, 0.5, 1));
         }
                 
         if (this.state === GAME_STATE.INTRO) {
