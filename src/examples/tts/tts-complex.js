@@ -5,6 +5,11 @@ const GAME_STATE = {
     GAME_OVER: 3
 }
 
+const SPAWN_MODE = {
+    RANDOM: 0,
+    FROM_XML: 1
+}
+
 class TTSC extends Game {
 
     get state() {
@@ -50,6 +55,7 @@ class TTSC extends Game {
 
         this.sceneLimits = new Rectangle(Vector2.Zero(), 1200, 640, Color.white, true, 2);
 
+        this.timeSinceStart = 0;
         this.timeToSpawnEnemy = 1;
         this.timeToSpawnEnemyAux = 0;
         this.enemiesSpawnPoints = [
@@ -77,10 +83,62 @@ class TTSC extends Game {
 
     }
 
+    _ParseXml() {
+        fetch('/src/examples/tts/xml/levels.xml')
+        .then(response => response.text())
+        .then(str => {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(str, "application/xml");
+                        
+            const levels = xml.getElementsByTagName("level");
+            // TODO separate levels if more than 1
+            const spawnsXml = levels[0];
+            const spawnsArray = [...spawnsXml.getElementsByTagName("spawn")];
+            this.spawns = []
+
+            
+            // parse xml objects to array
+            for (let i = 0; i < spawnsArray.length; i++) {
+                let spawn = 
+                {   
+                    time: parseInt(spawnsArray[i].getElementsByTagName("time")[0].textContent),
+                    enemies: []
+                }
+                let enemies = spawnsArray[i].getElementsByTagName("enemy")
+                for (let j = 0; j < enemies.length; j++) {
+                    const enemyXml = enemies[j];
+                    const position = enemyXml.getElementsByTagName("position")[0];                    
+                    const type = parseInt(enemyXml.getElementsByTagName("type")[0].textContent);
+                    let enemy =
+                    {
+                        x: parseInt(position.getElementsByTagName("x")[0].textContent),
+                        y: parseInt(position.getElementsByTagName("y")[0].textContent),
+                        type: type
+                    }
+                    spawn.enemies.push(enemy)                    
+                }
+                this.spawns.push(spawn)                       
+            }
+            
+            // TODO maybe at previous parse insert ordered instead of ordering afterwards.
+            // orders from less time of spawn to high
+            this.spawns.sort(function(a,b){
+                if (a.time < b.time)
+                    return -1;
+                if (b.time < a.time)
+                    return 1;
+                return 0;
+            })
+            
+        })
+        .catch(err => console.error(err));
+    }
+
     Start() {
         super.Start();
 
         this.state = GAME_STATE.MAIN_MENU;
+        this.spawnMode = SPAWN_MODE.FROM_XML; // Change this to required spawn mode
         
         // configure background gradient
         this.bgGrad = new LinearGradient(this.renderer, new Vector2(0, 1), [
@@ -101,6 +159,9 @@ class TTSC extends Game {
 
         // Setup events to automatically pause the game when the window loses focus or the tab becomes inactive
         this.SetupPauseEvents();
+        
+        if (this.spawnMode == SPAWN_MODE.FROM_XML)
+            this._ParseXml();
     }
 
     StartLvl() {
@@ -312,11 +373,28 @@ class TTSC extends Game {
     _updateGame(deltaTime) {
         this.mouseCircle.position.Set(Input.mouse.x, Input.mouse.y);
 
-        // enemy spawning
-        this.timeToSpawnEnemyAux += deltaTime;
-        if (this.timeToSpawnEnemyAux >= this.timeToSpawnEnemy) {
-            this.timeToSpawnEnemyAux = 0;
-            this.SpawnRandomEnemy();
+        if (this.spawnMode == SPAWN_MODE.RANDOM){
+            // ramdom enemy spawning
+            this.timeToSpawnEnemyAux += deltaTime;
+            if (this.timeToSpawnEnemyAux >= this.timeToSpawnEnemy) {
+                this.timeToSpawnEnemyAux = 0;
+                this.SpawnRandomEnemy();
+            }
+        }
+        else if (this.spawnMode == SPAWN_MODE.FROM_XML){
+            // Update time since start
+            this.timeSinceStart += deltaTime;
+            // Check list of spawns at level (doing only level 1 TODO more levels)
+            if (this.spawns && this.spawns.length > 0){
+                if (this.spawns[0].time < this.timeSinceStart){
+                    const enemies = this.spawns[0].enemies;
+                    for (let i = 0; i < enemies.length; i++) {
+                        const enemy = enemies[i];
+                        this.SpawnEnemy(enemy.type,new Vector2(enemy.x, enemy.y))                        
+                    }
+                    this.spawns.shift() // Remove first element
+                }
+            }
         }
     }
 
@@ -378,23 +456,35 @@ class TTSC extends Game {
 
     SpawnRandomEnemy() {
         const random = Math.random();
-        let enemy = null;
-        const spawnPoint = this.enemiesSpawnPoints[RandomBetweenInt(0, this.enemiesSpawnPoints.length - 1)];
-        if (random < 0.33) {
-            enemy = new Enemy(spawnPoint, this.graphicAssets.ships.img, this.player, this.sceneLimits);
-        }
-        else if (random < 0.66) {
-            enemy = new EnemyKamikaze(spawnPoint, this.graphicAssets.ships.img, this.player, this.sceneLimits);
-        }
-        else {
-            enemy = new EnemyAsteroid(spawnPoint, this.graphicAssets.ships.img, this.player, this.sceneLimits);
-        }
+        let type = random < 0.33 ? 0 : random < 0.66 ? 1 : 2;
+        const spawnPoint = this.enemiesSpawnPoints[RandomBetweenInt(0, this.enemiesSpawnPoints.length - 1)];        
+        
+        this.SpawnEnemy(type, spawnPoint)
 
         this.timeToSpawnEnemy *= 0.97;
         if (this.timeToSpawnEnemy < 0.15)
             this.timeToSpawnEnemy = 0.15
+        
+    }
+    
+    SpawnEnemy(type, spawnPoint){
+        let enemy = null;
+        switch (type) {
+            case 0: // Normal
+                enemy = new Enemy(spawnPoint, this.graphicAssets.ships.img, this.player, this.sceneLimits);
+                break;
+            case 1: // Kamikaze
+                enemy = new EnemyKamikaze(spawnPoint, this.graphicAssets.ships.img, this.player, this.sceneLimits);
+                break;
+            case 2: // Asteroid
+                enemy = new EnemyAsteroid(spawnPoint, this.graphicAssets.ships.img, this.player, this.sceneLimits);
+                break;        
+            default:
+                break;
+        }
 
-        this.AddEnemy(enemy);
+        if (enemy)
+            this.AddEnemy(enemy)
     }
 
     EnemyKilled(enemy) {

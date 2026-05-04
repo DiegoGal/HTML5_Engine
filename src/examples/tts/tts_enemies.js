@@ -1,3 +1,9 @@
+const ENEMY_TYPE = {
+    NORMAL: 0,
+    KAMIKAZE: 1,
+    ASTEROID: 2
+}
+
 class Enemy extends SpriteObject {
     static colliderColor = new Color(1, 0, 0, 0.25);
     static spawnColor = new Color(0, 0, 1, 0.25);
