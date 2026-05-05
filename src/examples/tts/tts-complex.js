@@ -47,7 +47,6 @@ class TTSC extends Game {
         // background gradient
         this.bgGrad = null;
 
-        this.mouseCircle = null;
         this.player = null;
         this.lives = 5;
         this.enemies = [];
@@ -178,13 +177,7 @@ class TTSC extends Game {
             { type: 'key', code: KEY_P },
             { type: 'key', code: KEY_ESCAPE },
             { type: 'gamepad', code: 'START' }
-        ]);
-
-                  
-
-        // initialize the mouse position circle
-        // TODO: replace with a crosshair sprite using the crosshair image asset, and make it only visible when aiming (inside game area)
-        this.mouseCircle = new Circle(new Vector2(0, 0), 5, Color.red, 1);
+        ]);                  
 
         // initialize the player in the center of the scene limits
         this.player = new TTSCPlayer(new Vector2(this.sceneLimits.width / 2, this.sceneLimits.height / 2), 0, 1, this.graphicAssets.ships.img, this.sceneLimits);
@@ -371,7 +364,6 @@ class TTSC extends Game {
     }
 
     _updateGame(deltaTime) {
-        this.mouseCircle.position.Set(Input.mouse.x, Input.mouse.y);
 
         if (this.spawnMode == SPAWN_MODE.RANDOM){
             // ramdom enemy spawning
@@ -426,10 +418,6 @@ class TTSC extends Game {
 
         if (this.camera)
             this.camera.PostDraw(this.renderer);
-        
-        // draw the mouse position
-        if (this.mouseCircle)
-            this.mouseCircle.Draw(renderer);
 
         this.playerScoreLabel.Draw(renderer);
 

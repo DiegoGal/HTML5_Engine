@@ -89,3 +89,10 @@
     0% { transform: translateY(0); }
     100% { transform: translateY(-100%); }
 }
+
+canvas {
+    background-color: white;
+    margin: 20px auto;
+    border: solid black 1px;
+    cursor: url(/src/examples/tts/assets/crosshair060.png) 32 32, auto;
+}
